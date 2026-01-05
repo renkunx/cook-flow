@@ -3,10 +3,37 @@ from os import getenv
 from django.conf import settings
 from django.contrib.auth.middleware import RemoteUserMiddleware
 from django.db import connection
+from django.utils import translation
 
 
 class CustomRemoteUser(RemoteUserMiddleware):
     header = getenv('PROXY_HEADER', 'HTTP_REMOTE_USER')
+
+
+class LocaleActivationMiddleware:
+    """
+    Middleware to activate the correct language for each request.
+    This ensures that the language setting from the session is properly applied.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Activate language from session or use default
+        language = translation.get_language_from_request(request)
+        translation.activate(language)
+        request.LANGUAGE_CODE = language
+
+        response = self.get_response(request)
+
+        # Set language cookie if needed
+        language = translation.get_language()
+        if hasattr(request, 'session'):
+            request.session.setdefault('django_language', language)
+
+        response.setdefault('Content-Language', language)
+
+        return response
 
 
 """

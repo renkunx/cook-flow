@@ -32,14 +32,15 @@ onMounted(() => {
 
     // console.log(locale.value)
     // const regionNames = new Intl.DisplayNames([locale.value], { type: "language" });
-    //
+    
     // availableLocalizations.value = []
-    // SUPPORT_LOCALES.forEach(locale => {
-    //     const lang = new Intl.Locale(locale.replace('_', '-'))
+    // SUPPORT_LOCALES.forEach(localeCode => {
+    //     const fullLocale = localeCode.replace('_', '-')
+    //     const lang = new Intl.Locale(fullLocale)
     //     console.log(lang)
     //     availableLocalizations.value.push({
-    //         code: lang.baseName,
-    //         language: `${regionNames.of(lang.baseName)} [${lang.baseName}]`
+    //         code: fullLocale,
+    //         language: `${regionNames.of(fullLocale)} [${fullLocale}]`
     //     } as Localization)
     // })
 })

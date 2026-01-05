@@ -22,8 +22,19 @@ export const SUPPORT_LOCALES = getSupportedLocales()
 
 export function setupI18n() {
     let locale = document.querySelector('html')!.getAttribute('lang')
+    console.log('[i18n] HTML lang attribute:', locale)
+    console.log('[i18n] SUPPORT_LOCALES:', SUPPORT_LOCALES)
+
+    // Normalize locale: handle case-insensitive matching (e.g., zh-hans -> zh-Hans)
+    if (locale != null) {
+        const normalizedLocale = SUPPORT_LOCALES.find(sl => sl.toLowerCase() === locale.toLowerCase())
+        if (normalizedLocale) {
+            locale = normalizedLocale
+        }
+    }
+
     if (locale == null || !SUPPORT_LOCALES.includes(locale)) {
-        console.warn('Falling back to locale en because ', locale, ' is not supported as a locale.')
+        console.warn('[i18n] Falling back to locale en because ', locale, ' is not supported as a locale.')
         locale = 'en'
     }
 
@@ -58,7 +69,9 @@ export async function loadLocaleMessages(i18n: I18n, locale: Locale) {
     // load locale messages
     let messages = en
     if (locale != 'en') {
-        messages = await import(`./locales/${locale}.json`).then((r: any) => r.default || r)
+        // Convert locale code back to filename format (zh-Hans -> zh_Hans)
+        const localeFile = locale.replace('-', '_')
+        messages = await import(`./locales/${localeFile}.json`).then((r: any) => r.default || r)
     }
 
     // remove empty strings
@@ -75,7 +88,9 @@ export async function loadLocaleMessages(i18n: I18n, locale: Locale) {
     TANDOOR_PLUGINS.forEach(plugin => {
         let pluginLocales = getSupportedLocales(plugin.localeFiles)
         if (pluginLocales.includes(locale)) {
-            import(`@/plugins/${plugin.basePath}/locales/${locale}.json`).then((r: any) => {
+            // Convert locale code back to filename format (zh-Hans -> zh_Hans)
+            const localeFile = locale.replace('-', '_')
+            import(`@/plugins/${plugin.basePath}/locales/${localeFile}.json`).then((r: any) => {
                 let pluginMessages = r.default || r
 
                 // remove empty strings

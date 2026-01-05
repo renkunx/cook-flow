@@ -271,6 +271,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.locale.LocaleMiddleware',
+    'recipes.middleware.LocaleActivationMiddleware',  # Custom middleware to ensure language activation
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'cookbook.helper.scope_middleware.ScopeMiddleware',
     'allauth.account.middleware.AccountMiddleware',
@@ -596,8 +597,8 @@ LANGUAGES = [
     ('sv', _('Swedish')),
     ('tr', _('Turkish')),
     ('uk', _('Ukranian')),
-    ('zh-Hant', _('Chinese (Traditional Han script)')),
-    ('zh-Hans', _('Chinese (Simplified Han script)')),
+    ('zh-Hans', _('Chinese (Simplified)')),
+    ('zh-Hant', _('Chinese (Traditional)')),
 ]
 
 # Static files (CSS, JavaScript, Images)
