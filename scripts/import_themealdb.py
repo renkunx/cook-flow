@@ -11,7 +11,11 @@ Usage:
 """
 
 import argparse
+import warnings
 import json
+
+# Filter out Pydantic warnings from litellm
+warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
 import os
 import sys
 import tempfile
@@ -33,8 +37,10 @@ from django.contrib.auth.models import User
 from django_scopes import scope, scopes_disabled
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files import File as DjangoFile
+from django.db.models import Q
 from cookbook.models import Recipe, Step, Ingredient, Food, Unit, Keyword, Space
 from cookbook.helper.image_processing import handle_image
+from cookbook.helper.ai_config_helper import get_ai_provider_config
 import uuid
 from io import BytesIO
 
@@ -46,11 +52,43 @@ THEMEALDB_BASE_URL = "https://www.themealdb.com/api/json/v1/1"
 class TheMealDBImporter:
     """Importer for TheMealDB recipes to Tandoor Recipes"""
 
-    def __init__(self, space: Space, user: User):
+    def __init__(self, space: Space, user: User, translate_language: str = None):
         self.space = space
         self.user = user
         self.session = requests.Session()
         self.imported_images = set()  # Track imported images to avoid duplicates
+        self.translate_language = translate_language  # 'zh', 'ja', 'ko' or None
+
+        # Language mapping for AI translation
+        self.language_names = {
+            'zh': 'Chinese (Simplified)',
+            'ja': 'Japanese',
+            'ko': 'Korean'
+        }
+
+        # Load AI config if translation is enabled
+        self.ai_config = None
+        if self.translate_language:
+            self._load_ai_config()
+
+    def _load_ai_config(self):
+        """Load AI provider configuration for translation"""
+        from cookbook.models import AiProvider
+
+        try:
+            provider = AiProvider.objects.filter(
+                Q(space=self.space) | Q(space__isnull=True)
+            ).first()
+
+            if not provider:
+                print("Warning: No AI provider found. Translation will be skipped.")
+                return
+
+            self.ai_config = get_ai_provider_config(provider)
+            print(f"AI translation enabled: {self.language_names.get(self.translate_language, self.translate_language)}")
+        except Exception as e:
+            print(f"Warning: Failed to load AI config for translation: {e}")
+            self.ai_config = None
 
     def fetch_all_categories(self) -> List[str]:
         """Fetch all available categories from TheMealDB"""
@@ -192,6 +230,82 @@ class TheMealDBImporter:
 
         return amount, ingredient_str, unit
 
+    def translate_text(self, text: str) -> str:
+        """Translate text using AI (DeepSeek)
+
+        Args:
+            text: Text to translate
+
+        Returns:
+            Translated text or original text if translation fails
+        """
+        if not text or not self.ai_config or not self.translate_language:
+            return text
+
+        try:
+            from litellm import completion
+
+            target_language = self.language_names.get(self.translate_language, self.translate_language)
+
+            messages = [{
+                "role": "user",
+                "content": f"Translate the following text to {target_language}. Only return the translated text, nothing else:\n\n{text}"
+            }]
+
+            response = completion(
+                **self.ai_config,
+                messages=messages
+            )
+
+            translated = response.choices[0].message.content
+            if translated:
+                translated = translated.strip()
+                return translated
+            else:
+                return text
+        except Exception as e:
+            print(f"    Warning: Translation failed: {e}")
+            return text
+
+    def translate_recipe_fields(self, meal: Dict, recipe: Recipe):
+        """Translate recipe fields using AI
+
+        Args:
+            meal: Original meal data from TheMealDB
+            recipe: Created recipe object to update
+        """
+        if not self.ai_config or not self.translate_language:
+            return
+
+        target_language = self.language_names.get(self.translate_language, self.translate_language)
+        print(f"    Translating recipe to {target_language}...")
+
+        # Translate recipe name
+        if meal.get('strMeal'):
+            recipe.name = self.translate_text(meal.get('strMeal'))
+            print(f"      Name: {recipe.name}")
+
+        # Translate description
+        if meal.get('strCategory'):
+            recipe.description = self.translate_text(meal.get('strCategory'))
+
+        # Translate step instructions
+        if recipe.steps.exists():
+            step = recipe.steps.first()
+            if step.instruction:
+                step.instruction = self.translate_text(step.instruction)
+                step.save()
+
+        # Translate ingredients (food names)
+        for step in recipe.steps.all():
+            for ingredient in step.ingredients.all():
+                if ingredient.food:
+                    ingredient.food.name = self.translate_text(ingredient.food.name)
+                    ingredient.food.save()
+
+        # Save recipe
+        recipe.save()
+
     def create_recipe_from_meal(self, meal: Dict, replace: bool = False) -> Recipe:
         """Create a Tandoor Recipe from TheMealDB meal data
 
@@ -306,6 +420,10 @@ class TheMealDBImporter:
                 ingredient.save()
 
         print(f"  Created recipe: {recipe.name}")
+
+        # Translate recipe if language is specified
+        self.translate_recipe_fields(meal, recipe)
+
         return recipe
 
     def import_by_category(self, category: str, limit: Optional[int] = None, replace: bool = False) -> int:
@@ -417,6 +535,13 @@ def main():
         type=int,
         help='Space ID to import into (defaults to user active space)'
     )
+    parser.add_argument(
+        '--language',
+        '--lang',
+        type=str,
+        choices=['zh', 'ja', 'ko'],
+        help='Translate recipes to specified language: zh=Chinese, ja=Japanese, ko=Korean'
+    )
 
     args = parser.parse_args()
 
@@ -446,7 +571,7 @@ def main():
     print(f"Importing for user: {user.username}")
     print(f"Space: {space.name}")
 
-    importer = TheMealDBImporter(space, user)
+    importer = TheMealDBImporter(space, user, translate_language=getattr(args, 'language', None))
 
     if args.list_categories:
         print("\nAvailable categories:")
