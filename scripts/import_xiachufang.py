@@ -219,10 +219,28 @@ class XiachufangImporter:
             # 构造 AI prompt（参考系统的实现）
             prompt = """Please look at the following text from a Chinese recipe website and return the contained recipe as a structured JSON.
 
-Use the format given in the schema.org/Recipe schema.
+Use the following JSON format (do NOT use schema.org format, use this custom format):
+
+```json
+{
+  "name": "菜谱名称",
+  "description": "简短描述",
+  "ingredients": [
+    {"food": "食材名", "amount": 数字, "unit": "单位", "note": "原始文本"}
+  ],
+  "steps": ["步骤1", "步骤2", ...]
+}
+```
+
+Requirements:
 - The JSON should be in Chinese.
 - Simplify the recipe name: remove marketing words, emojis, and exaggerated phrases. Keep only the core dish name (e.g., "超开胃的番茄土豆肥牛汤‼️下米饭无敌了" should become "土豆肥牛汤")
-- Include: name, description, recipeIngredient (array of ingredients), recipeInstructions (array of steps)
+- **IMPORTANT**: Extract ALL ingredients mentioned in the text. Look for:
+  * Ingredient lists (用料, 食材, 材料 sections)
+  * Ingredients mentioned within the cooking steps
+  * Parse each ingredient into: food (name), amount (number), unit (个/勺/克/etc), note (original text)
+  * For ingredients without amounts, set amount to null
+  * For vague quantities like "适量", "少许", set amount to null and note the original text
 - For description: provide a concise description including flavor profile and nutritional highlights in 1-2 sentences.
 - Do not make anything up and leave everything blank you do not know.
 - Only use normal UTF-8 characters.
@@ -292,21 +310,26 @@ Recipe text:
             # 提取图片URL
             image_url = self.extract_main_image(html, recipe_url)
 
-            # 提取食材（可能是字符串数组或对象数组）
+            # 提取食材 - 支持新格式（AI 解析的结构化数据）和旧格式（schema.org）
             ingredients = []
-            raw_ingredients = recipe_json.get('recipeIngredient', [])
+            raw_ingredients = recipe_json.get('ingredients', []) or recipe_json.get('recipeIngredient', [])
+
             if isinstance(raw_ingredients, list):
                 for item in raw_ingredients:
                     if isinstance(item, str):
+                        # 旧格式：字符串数组
                         ingredients.append(item)
                     elif isinstance(item, dict):
-                        # 如果是对象，尝试提取文本
-                        text = item.get('text') or item.get('name') or str(item)
-                        ingredients.append(text)
+                        # 新格式：结构化对象 {food, amount, unit, note}
+                        # 直接保存结构化数据，后续创建时使用
+                        ingredients.append(item)
+                    else:
+                        # 其他类型，转换为字符串
+                        ingredients.append(str(item))
 
             # 提取步骤
             steps = []
-            raw_instructions = recipe_json.get('recipeInstructions', [])
+            raw_instructions = recipe_json.get('steps', []) or recipe_json.get('recipeInstructions', [])
             if isinstance(raw_instructions, list):
                 for item in raw_instructions:
                     if isinstance(item, str):
@@ -340,7 +363,6 @@ Recipe text:
 
             print(f"      AI 解析成功: {result['name']}")
             print(f"        食材数: {len(result['ingredients'])}, 步骤数: {len(result['steps'])}")
-
             return result
 
         except Exception as e:
@@ -468,27 +490,48 @@ Recipe text:
         return unit
 
     def parse_ingredient(self, ingredient_str: str) -> tuple:
-        """Parse ingredient string"""
+        """Parse ingredient string - supports both English and Chinese formats"""
         ingredient_str = ingredient_str.strip()
 
-        # 尝试匹配数字+单位
-        match = re.match(r'^([\d.]+)\s*([个只杯勺汤匙毫升克gkgmlmL]+)?\s*(.*)$', ingredient_str)
+        # 中文单位列表（按优先级排序，避免部分匹配）
+        cn_units = ['朵', '根', '瓣', '片', '块', '条', '个', '只', '杯', '勺', '汤匙', '茶匙', '毫升', 'ml', 'mL', '克', 'g', 'kg', '两', '斤']
 
+        # 中文格式：食材在前，数量在后（如：鸡蛋 2个、猪肉 100g、生抽 2勺、木耳 2朵）
+        # 匹配模式：食材名 + 数字 + 单位
+        for unit in cn_units:
+            pattern = rf'^(.+?)\s+([\d.]+)\s*{unit}\s*$'
+            match = re.match(pattern, ingredient_str)
+            if match:
+                food = match.group(1).strip()
+                amount = match.group(2)
+                try:
+                    amount = float(amount)
+                except ValueError:
+                    amount = None
+                return amount, food, unit
+
+        # 英文格式：数字+单位在前，食材在后（如：2 eggs, 100g flour）
+        match = re.match(r'^([\d.]+)\s*(?:个|只|杯|勺|汤匙|茶匙|毫升|ml|mL|克|g|kg)?\s*(.+)$', ingredient_str)
         if match:
             amount = match.group(1)
-            unit = match.group(2)
-            food = match.group(3).strip()
+            food = match.group(2).strip()
+
+            # 提取单位
+            unit_match = re.search(r'(个|只|杯|勺|汤匙|茶匙|毫升|ml|mL|克|g|kg)', ingredient_str)
+            unit = unit_match.group(1) if unit_match else None
 
             try:
                 amount = float(amount)
             except ValueError:
                 amount = None
 
-            if not food:
-                food = ingredient_str
-
             return amount, food, unit
 
+        # 没有数字的情况（如：适量、少许）
+        if any(x in ingredient_str for x in ['适量', '少许', '一点', '若干']):
+            return None, ingredient_str.replace('适量', '').replace('少许', '').replace('一点', '').replace('若干', '').strip() or ingredient_str, None
+
+        # 完全无法解析，返回原字符串
         return None, ingredient_str, None
 
     def create_recipe(self, recipe_data: Dict, replace: bool = False) -> Optional[Recipe]:
@@ -555,28 +598,55 @@ Recipe text:
 
         # 添加食材到第一个步骤
         ingredients_data = recipe_data.get('ingredients', [])
+
         if ingredients_data and recipe.steps.exists():
             step = recipe.steps.first()
 
-            for ingredient_str in ingredients_data[:20]:
-                if not ingredient_str or len(ingredient_str) < 2:
+            created_count = 0
+            for ingredient_data in ingredients_data[:20]:
+                # 支持两种格式：
+                # 1. AI 返回的结构化格式: {"food": "鸡蛋", "amount": 2, "unit": "个", "note": "2个鸡蛋"}
+                # 2. 字符串格式: "鸡蛋 2个"（需要解析）
+
+                if isinstance(ingredient_data, dict):
+                    # AI 返回的结构化数据
+                    food_name = ingredient_data.get('food', '')
+                    amount = ingredient_data.get('amount')
+                    unit_name = ingredient_data.get('unit', '')
+                    note = ingredient_data.get('note', '')
+
+                    if not food_name:
+                        continue
+
+                elif isinstance(ingredient_data, str):
+                    # 字符串格式，需要解析
+                    if not ingredient_data or len(ingredient_data) < 2:
+                        continue
+
+                    amount, food_name, unit_name = self.parse_ingredient(ingredient_data)
+                    note = ingredient_data
+                else:
                     continue
 
-                amount, food_name, unit_name = self.parse_ingredient(str(ingredient_str))
-
+                # 创建 Food 和 Unit
                 food = self.create_or_get_food(food_name)
                 unit = self.create_or_get_unit(unit_name) if unit_name else None
 
+                # 创建 Ingredient
                 ingredient = Ingredient.objects.create(
                     space=self.space,
                     food=food,
                     unit=unit,
-                    amount=amount or 1,
-                    note=str(ingredient_str) if not amount else '',
-                    original_text=str(ingredient_str)
+                    amount=float(amount) if amount else 1,
+                    note=note,
+                    original_text=note
                 )
-                ingredient.step = step
-                ingredient.save()
+                # 使用 ManyToMany 关系添加食材到步骤
+                step.ingredients.add(ingredient)
+                created_count += 1
+
+            if created_count > 0:
+                print(f"      成功创建 {created_count} 个食材")
 
         print(f"    ✓ 创建菜谱成功: {recipe.name}")
         return recipe
