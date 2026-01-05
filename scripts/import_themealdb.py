@@ -1,29 +1,33 @@
 #!/usr/bin/env python3
 """
-TheMealDB Recipe Importer for Tandoor Recipes
+TheMealDB Recipe Importer for Tandoor Recipes (AI-Enhanced Version)
 
-This script fetches recipes from TheMealDB API and imports them into Tandoor Recipes.
+This script fetches recipes from TheMealDB API and uses AI to:
+1. Translate to Chinese (or other languages)
+2. Generate recipe description
+3. Optimize cooking steps
+4. Assign ingredients to steps
+5. Calculate nutritional information (calories, protein, fat, carbs)
 
 Usage:
     python scripts/import_themealdb.py --count 10
     python scripts/import_themealdb.py --category Seafood
-    python scripts/import_themealdb.py --random
+    python scripts/import_themealdb.py --random --lang zh
 """
 
 import argparse
 import warnings
 import json
-
-# Filter out Pydantic warnings from litellm
-warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
 import os
 import sys
-import tempfile
 import requests
 from typing import List, Dict, Optional
 from urllib.parse import urlparse
 from PIL import Image as PILImage
 from io import BytesIO
+
+# Filter out Pydantic warnings from litellm
+warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -35,14 +39,12 @@ django.setup()
 
 from django.contrib.auth.models import User
 from django_scopes import scope, scopes_disabled
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.files import File as DjangoFile
 from django.db.models import Q
-from cookbook.models import Recipe, Step, Ingredient, Food, Unit, Keyword, Space
+from cookbook.models import Recipe, Step, Ingredient, Food, Unit, Keyword, Space, PropertyType, AiProvider, Property
 from cookbook.helper.image_processing import handle_image
 from cookbook.helper.ai_config_helper import get_ai_provider_config
 import uuid
-from io import BytesIO
 
 
 # TheMealDB API endpoints
@@ -50,29 +52,28 @@ THEMEALDB_BASE_URL = "https://www.themealdb.com/api/json/v1/1"
 
 
 class TheMealDBImporter:
-    """Importer for TheMealDB recipes to Tandoor Recipes"""
+    """Importer for TheMealDB recipes with AI-powered processing"""
 
     def __init__(self, space: Space, user: User, translate_language: str = None):
         self.space = space
         self.user = user
         self.session = requests.Session()
-        self.imported_images = set()  # Track imported images to avoid duplicates
-        self.translate_language = translate_language  # 'zh', 'ja', 'ko' or None
+        self.imported_images = set()
+        self.translate_language = translate_language
 
-        # Language mapping for AI translation
+        # Language mapping
         self.language_names = {
             'zh': 'Chinese (Simplified)',
             'ja': 'Japanese',
             'ko': 'Korean'
         }
 
-        # Load AI config if translation is enabled
+        # Load AI config
         self.ai_config = None
-        if self.translate_language:
-            self._load_ai_config()
+        self._load_ai_config()
 
     def _load_ai_config(self):
-        """Load AI provider configuration for translation"""
+        """Load AI provider configuration"""
         from cookbook.models import AiProvider
 
         try:
@@ -81,50 +82,37 @@ class TheMealDBImporter:
             ).first()
 
             if not provider:
-                print("Warning: No AI provider found. Translation will be skipped.")
+                print("Warning: No AI provider found. Import will use basic mode.")
                 return
 
             self.ai_config = get_ai_provider_config(provider)
-            print(f"AI translation enabled: {self.language_names.get(self.translate_language, self.translate_language)}")
+            if self.translate_language:
+                print(f"AI translation enabled: {self.language_names.get(self.translate_language, self.translate_language)}")
+            else:
+                print("AI processing enabled")
         except Exception as e:
-            print(f"Warning: Failed to load AI config for translation: {e}")
+            print(f"Warning: Failed to load AI config: {e}")
             self.ai_config = None
 
-    def fetch_all_categories(self) -> List[str]:
-        """Fetch all available categories from TheMealDB"""
-        response = self.session.get(f"{THEMEALDB_BASE_URL}/categories.php")
-        response.raise_for_status()
-        data = response.json()
-
-        if data.get('categories'):
-            return [cat['strCategory'] for cat in data['categories']]
-        return []
-
     def download_image(self, image_url: str) -> Optional[bytes]:
-        """Download image from URL and return processed image data"""
+        """Download and process image"""
         if not image_url or image_url in self.imported_images:
             return None
 
         try:
-            # Download image
             response = self.session.get(image_url, timeout=30)
             response.raise_for_status()
 
-            # Determine filetype (TheMealDB typically uses jpg)
             ext = '.jpg'
 
-            # Create a request-like object for handle_image
             class FakeRequest:
                 def __init__(self, user, space):
                     self.user = user
                     self.space = space
 
             fake_request = FakeRequest(self.user, self.space)
-
-            # Create file object
             image_file = DjangoFile(BytesIO(response.content), name='image.jpg')
 
-            # Process image using handle_image
             processed_image = handle_image(fake_request, image_file, ext)
 
             if processed_image:
@@ -141,7 +129,6 @@ class TheMealDBImporter:
         response = self.session.get(f"{THEMEALDB_BASE_URL}/filter.php", params={'c': category})
         response.raise_for_status()
         data = response.json()
-
         return data.get('meals', [])
 
     def fetch_meal_details(self, meal_id: str) -> Optional[Dict]:
@@ -149,24 +136,30 @@ class TheMealDBImporter:
         response = self.session.get(f"{THEMEALDB_BASE_URL}/lookup.php", params={'i': meal_id})
         response.raise_for_status()
         data = response.json()
-
         meals = data.get('meals', [])
         if meals:
             return meals[0]
         return None
 
+    def fetch_all_categories(self) -> List[str]:
+        """Fetch all available categories from TheMealDB"""
+        response = self.session.get(f"{THEMEALDB_BASE_URL}/categories.php")
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get('categories'):
+            return [cat['strCategory'] for cat in data['categories']]
+        return []
+
     def create_or_get_food(self, name: str) -> Food:
         """Get or create a Food item"""
         name = name.strip()
-
-        # Check if already exists with exact or case-insensitive match
         try:
             food = Food.objects.get(name__iexact=name, space=self.space)
             return food
         except Food.DoesNotExist:
             pass
 
-        # Create new food (NOTE: Food doesn't have created_by field)
         food = Food.objects.create(
             space=self.space,
             name=name,
@@ -174,18 +167,18 @@ class TheMealDBImporter:
         )
         return food
 
-    def create_or_get_unit(self, name: str) -> Unit:
+    def create_or_get_unit(self, name: str) -> Optional[Unit]:
         """Get or create a Unit"""
-        name = name.strip()
+        if not name:
+            return None
 
-        # Check if already exists with exact or case-insensitive match
+        name = name.strip()
         try:
             unit = Unit.objects.get(name__iexact=name, space=self.space)
             return unit
         except Unit.DoesNotExist:
             pass
 
-        # Create new unit (NOTE: Unit doesn't have created_by field)
         unit = Unit.objects.create(
             space=self.space,
             name=name,
@@ -193,247 +186,333 @@ class TheMealDBImporter:
         )
         return unit
 
-    def parse_ingredient(self, ingredient_str: str, measure_str: str) -> tuple:
+    def process_with_ai(self, meal: Dict) -> Optional[Dict]:
         """
-        Parse ingredient and measure strings into (amount, food, unit)
-
-        Examples:
-        - "1 cup", "Rice" -> (1, "Rice", "cup")
-        - "2 tbsp", "Olive Oil" -> (2, "Olive Oil", "tbsp")
-        - "", "Salt" -> (None, "Salt", None)
+        Use AI to process the meal data:
+        - Translate to target language (if specified)
+        - Generate recipe description
+        - Optimize and structure cooking steps
+        - Assign ingredients to appropriate steps
+        - Calculate nutritional information
         """
-        # Clean up the strings
-        ingredient_str = ingredient_str.strip()
-        measure_str = measure_str.strip()
-
-        if not measure_str:
-            return None, ingredient_str, None
-
-        # Try to extract amount and unit from measure
-        parts = measure_str.split()
-        if not parts:
-            return None, ingredient_str, None
-
-        # First part might be a number
-        amount = None
-        unit = None
-
-        try:
-            amount = float(parts[0])
-            remaining = ' '.join(parts[1:])
-        except ValueError:
-            remaining = measure_str
-
-        # The rest is the unit
-        if remaining:
-            unit = remaining
-
-        return amount, ingredient_str, unit
-
-    def translate_text(self, text: str) -> str:
-        """Translate text using AI (DeepSeek)
-
-        Args:
-            text: Text to translate
-
-        Returns:
-            Translated text or original text if translation fails
-        """
-        if not text or not self.ai_config or not self.translate_language:
-            return text
+        if not self.ai_config:
+            return None
 
         try:
             from litellm import completion
 
-            target_language = self.language_names.get(self.translate_language, self.translate_language)
+            print(f"    Processing with AI...")
+
+            # Build ingredient list for context
+            ingredient_list = []
+            for i in range(1, 21):
+                ingredient = meal.get(f'strIngredient{i}', '').strip()
+                measure = meal.get(f'strMeasure{i}', '').strip()
+                if ingredient:
+                    ingredient_list.append(f"{measure} {ingredient}".strip())
+
+            instructions = meal.get('strInstructions', '')
+            category = meal.get('strCategory', '')
+            area = meal.get('strArea', '')
+
+            # Build the AI prompt
+            if self.translate_language == 'zh':
+                target_lang = "Chinese (Simplified)"
+                prompt = f"""You are a professional chef and recipe translator. Please process the following English recipe and return a structured JSON in Chinese.
+
+Original Recipe Data:
+- Name: {meal.get('strMeal')}
+- Category: {category}
+- Cuisine: {area}
+- Ingredients: {', '.join(ingredient_list)}
+- Instructions: {instructions}
+
+Please return a JSON in this exact format:
+
+{{
+  "name": "中文菜名（简化，去掉营销词汇）",
+  "description": "简短描述（1-2句话，包含口感、风味、营养亮点）",
+  "keywords": ["关键词1", "关键词2"],
+  "steps": [
+    {{
+      "instruction": "详细的步骤说明（用中文，条理清晰）",
+      "ingredients": [
+        {{"food": "食材中文名", "amount": 数量, "unit": "单位"}}
+      ]
+    }}
+  ],
+  "nutrition": {{
+    "calories": 估算数值（每份）,
+    "protein": 数值（克）,
+    "fat": 数值（克）,
+    "carbohydrates": 数值（克）
+  }},
+  "servings": 估算份数,
+  "working_time": 估算时间（分钟）
+}}
+
+Requirements:
+1. Simplify the recipe name: Remove marketing words, keep only the core dish name
+2. Break down long instructions into logical, numbered steps
+3. Assign ingredients to the steps where they are first used
+4. Estimate nutritional values based on the ingredients (be realistic)
+5. Only return valid JSON, no explanations
+6. Use proper UTF-8 Chinese characters
+
+Recipe text:"""
+            else:
+                # English mode - just optimize
+                prompt = f"""You are a professional chef. Please process the following recipe and return a structured JSON.
+
+Original Recipe Data:
+- Name: {meal.get('strMeal')}
+- Category: {category}
+- Cuisine: {area}
+- Ingredients: {', '.join(ingredient_list)}
+- Instructions: {instructions}
+
+Please return a JSON in this exact format:
+
+{{
+  "name": "Simplified recipe name",
+  "description": "Brief description (1-2 sentences)",
+  "keywords": ["keyword1", "keyword2"],
+  "steps": [
+    {{
+      "instruction": "Detailed step instruction",
+      "ingredients": [
+        {{"food": "ingredient name", "amount": number, "unit": "unit"}}
+      ]
+    }}
+  ],
+  "nutrition": {{
+    "calories": estimated value per serving,
+    "protein": grams,
+    "fat": grams,
+    "carbohydrates": grams
+  }},
+  "servings": estimated servings,
+  "working_time": minutes
+}}
+
+Requirements:
+1. Simplify the recipe name
+2. Break down instructions into logical steps
+3. Assign ingredients to appropriate steps
+4. Estimate nutritional values realistically
+5. Only return valid JSON
+
+Recipe text:"""
 
             messages = [{
                 "role": "user",
-                "content": f"Translate the following text to {target_language}. Only return the translated text, nothing else:\n\n{text}"
+                "content": prompt
             }]
 
             response = completion(
                 **self.ai_config,
-                messages=messages
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.3
             )
 
-            translated = response.choices[0].message.content
-            if translated:
-                translated = translated.strip()
-                return translated
-            else:
-                return text
+            response_text = response.choices[0].message.content.strip()
+
+            # Parse JSON response
+            if response_text.startswith('```'):
+                response_text = '\n'.join(response_text.split('\n')[1:-1])
+
+            recipe_json = json.loads(response_text)
+
+            # Add image URL
+            recipe_json['image_url'] = meal.get('strMealThumb')
+            recipe_json['source_url'] = meal.get('strSource') or meal.get('strYoutube')
+
+            print(f"      AI processing complete: {recipe_json['name']}")
+            print(f"        Steps: {len(recipe_json.get('steps', []))}")
+            print(f"        Nutrition: {recipe_json.get('nutrition', {})}")
+
+            return recipe_json
+
         except Exception as e:
-            print(f"    Warning: Translation failed: {e}")
-            return text
+            print(f"    AI processing failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
 
-    def translate_recipe_fields(self, meal: Dict, recipe: Recipe):
-        """Translate recipe fields using AI
+    def process_basic(self, meal: Dict) -> Dict:
+        """Basic processing without AI"""
+        ingredient_list = []
+        for i in range(1, 21):
+            ingredient = meal.get(f'strIngredient{i}', '').strip()
+            measure = meal.get(f'strMeasure{i}', '').strip()
+            if ingredient:
+                ingredient_list.append({
+                    'food': ingredient,
+                    'amount': 1,
+                    'unit': measure if measure else None,
+                    'note': f"{measure} {ingredient}".strip()
+                })
 
-        Args:
-            meal: Original meal data from TheMealDB
-            recipe: Created recipe object to update
-        """
-        if not self.ai_config or not self.translate_language:
-            return
+        instructions = meal.get('strInstructions', '')
+        # Split instructions by common delimiters
+        steps = []
+        for delimiter in ['\r\n\r\n', '\n\n', '. ', '。']:
+            if delimiter in instructions:
+                steps = [s.strip() for s in instructions.split(delimiter) if s.strip()]
+                break
+        if not steps:
+            steps = [instructions]
 
-        target_language = self.language_names.get(self.translate_language, self.translate_language)
-        print(f"    Translating recipe to {target_language}...")
+        return {
+            'name': meal.get('strMeal', 'Unknown Recipe'),
+            'description': meal.get('strCategory', ''),
+            'keywords': [meal.get('strCategory'), meal.get('strArea')] if meal.get('strArea') else [meal.get('strCategory')],
+            'steps': [{'instruction': s, 'ingredients': []} for s in steps[:10]],
+            'ingredients': ingredient_list,
+            'image_url': meal.get('strMealThumb'),
+            'source_url': meal.get('strSource') or meal.get('strYoutube'),
+            'servings': 1,
+            'working_time': 30,
+            'nutrition': {}
+        }
 
-        # Translate recipe name
-        if meal.get('strMeal'):
-            recipe.name = self.translate_text(meal.get('strMeal'))
-            print(f"      Name: {recipe.name}")
-
-        # Translate description
-        if meal.get('strCategory'):
-            recipe.description = self.translate_text(meal.get('strCategory'))
-
-        # Translate step instructions
-        if recipe.steps.exists():
-            step = recipe.steps.first()
-            if step.instruction:
-                step.instruction = self.translate_text(step.instruction)
-                step.save()
-
-        # Translate ingredients (food names)
-        for step in recipe.steps.all():
-            for ingredient in step.ingredients.all():
-                if ingredient.food:
-                    ingredient.food.name = self.translate_text(ingredient.food.name)
-                    ingredient.food.save()
-
-        # Save recipe
-        recipe.save()
-
-    def create_recipe_from_meal(self, meal: Dict, replace: bool = False) -> Recipe:
-        """Create a Tandoor Recipe from TheMealDB meal data
-
-        Args:
-            meal: TheMealDB meal data
-            replace: If True, replace existing recipe; if False, skip it
-        """
+    def create_recipe_from_data(self, recipe_data: Dict, replace: bool = False) -> Optional[Recipe]:
+        """Create Tandoor Recipe from processed data"""
+        name = recipe_data.get('name', 'Unknown Recipe')
 
         # Check if recipe already exists
-        existing = Recipe.objects.filter(space=self.space, name=meal.get('strMeal')).first()
+        existing = Recipe.objects.filter(space=self.space, name=name).first()
         if existing:
             if replace:
-                print(f"  Recipe '{meal.get('strMeal')}' exists, replacing...")
-                # Delete existing recipe and its related objects
+                print(f"  Recipe '{name}' exists, replacing...")
                 existing.delete()
             else:
-                print(f"  Recipe '{meal.get('strMeal')}' already exists, skipping...")
+                print(f"  Recipe '{name}' already exists, skipping...")
                 return existing
 
         # Create the recipe
         recipe = Recipe.objects.create(
             space=self.space,
             created_by=self.user,
-            name=meal.get('strMeal', 'Unknown Recipe'),
-            description=meal.get('strCategory', ''),
-            source_url=meal.get('strSource') or meal.get('strYoutube'),
-            servings=1,
-            servings_text="1 serving",
-            working_time=30,  # TheMealDB doesn't provide time, default 30 min
+            name=name,
+            description=recipe_data.get('description', ''),
+            source_url=recipe_data.get('source_url'),
+            servings=recipe_data.get('servings', 1),
+            servings_text=f"{recipe_data.get('servings', 1)} serving",
+            working_time=recipe_data.get('working_time', 30),
             waiting_time=0,
             internal=True,
         )
 
-        # Download and add image if available
-        image_url = meal.get('strMealThumb')
+        # Download and add image
+        image_url = recipe_data.get('image_url')
         if image_url:
-            print(f"    Downloading image...")
             image_data = self.download_image(image_url)
             if image_data:
                 try:
-                    # Save image to recipe
                     recipe.image.save(f'{uuid.uuid4()}_{recipe.pk}.jpg', DjangoFile(image_data))
                     recipe.save()
                 except Exception as e:
-                    print(f"    Warning: Failed to save image to recipe: {e}")
+                    print(f"    Warning: Failed to save image: {e}")
 
-        # Add keywords (NOTE: Keyword doesn't have created_by field)
-        category = meal.get('strCategory')
-        if category:
-            keyword, created = Keyword.objects.get_or_create(
-                name=category,
-                space=self.space,
-                defaults={'description': f'Category: {category}'}
-            )
-            recipe.keywords.add(keyword)
+        # Add keywords
+        keywords = recipe_data.get('keywords', [])
+        for kw_name in keywords:
+            if kw_name:
+                keyword, created = Keyword.objects.get_or_create(
+                    name=kw_name,
+                    space=self.space,
+                    defaults={'description': f'Tag: {kw_name}'}
+                )
+                recipe.keywords.add(keyword)
 
-        area = meal.get('strArea')
-        if area:
-            keyword, created = Keyword.objects.get_or_create(
-                name=area,
-                space=self.space,
-                defaults={'description': f'Cuisine: {area}'}
-            )
-            recipe.keywords.add(keyword)
+        # Create steps with ingredients
+        steps_data = recipe_data.get('steps', [])
+        if not steps_data:
+            # Fallback: create one step with all ingredients
+            steps_data = [{
+                'instruction': recipe_data.get('description', 'See instructions'),
+                'ingredients': recipe_data.get('ingredients', [])
+            }]
 
-        # Create step with instructions
-        instructions = meal.get('strInstructions', '')
-        if instructions:
-            # Clean up instructions
-            instructions = instructions.replace('\r\n', '\n').replace('\r', '\n')
+        for idx, step_data in enumerate(steps_data[:20], start=1):
+            if not step_data.get('instruction'):
+                continue
 
             step = Step.objects.create(
                 space=self.space,
-                name='Instructions',
-                instruction=instructions,
-                order=1
+                name=f'Step {idx}' if len(steps_data) > 1 else 'Instructions',
+                instruction=step_data['instruction'],
+                order=idx
             )
             recipe.steps.add(step)
 
-        # Add ingredients
-        ingredients = []
-        for i in range(1, 21):  # TheMealDB has up to 20 ingredients
-            ingredient_key = f'strIngredient{i}'
-            measure_key = f'strMeasure{i}'
+            # Add ingredients to this step
+            step_ingredients = step_data.get('ingredients', [])
+            for ing_data in step_ingredients:
+                if isinstance(ing_data, dict):
+                    food_name = ing_data.get('food', '')
+                    amount = ing_data.get('amount')
+                    unit_name = ing_data.get('unit')
+                else:
+                    continue
 
-            ingredient_name = meal.get(ingredient_key, '').strip()
-            measure = meal.get(measure_key, '').strip()
+                if not food_name:
+                    continue
 
-            if not ingredient_name:
-                continue
+                food = self.create_or_get_food(food_name)
+                unit = self.create_or_get_unit(unit_name) if unit_name else None
 
-            amount, food_name, unit_name = self.parse_ingredient(ingredient_name, measure)
+                ingredient = Ingredient.objects.create(
+                    space=self.space,
+                    food=food,
+                    unit=unit,
+                    amount=float(amount) if amount else 1,
+                    note=ing_data.get('note', '') if isinstance(ing_data, dict) else ''
+                )
+                step.ingredients.add(ingredient)
 
-            food = self.create_or_get_food(food_name)
-            unit = self.create_or_get_unit(unit_name) if unit_name else None
+        # Add nutrition properties if available
+        nutrition = recipe_data.get('nutrition', {})
+        if nutrition:
+            # Get or create property types and create properties
+            nutrition_map = {
+                'calories': ('卡路里' if self.translate_language == 'zh' else 'Calories', 'kcal'),
+                'protein': ('蛋白质' if self.translate_language == 'zh' else 'Protein', 'g'),
+                'fat': ('脂肪' if self.translate_language == 'zh' else 'Fat', 'g'),
+                'carbohydrates': ('碳水化合物' if self.translate_language == 'zh' else 'Carbohydrates', 'g'),
+            }
 
-            ingredient = Ingredient.objects.create(
-                space=self.space,
-                food=food,
-                unit=unit,
-                amount=amount or 1,
-                note=measure if not amount and measure else '',
-                original_text=f"{measure} {ingredient_name}".strip()
-            )
-            ingredients.append(ingredient)
+            for key, value in nutrition.items():
+                if key in nutrition_map and value is not None:
+                    pt_name, pt_unit = nutrition_map[key]
 
-        # Add ingredients to step
-        if recipe.steps.exists():
-            step = recipe.steps.first()
-            for ingredient in ingredients:
-                ingredient.step = step
-                ingredient.save()
+                    # Get or create property type
+                    property_type, created = PropertyType.objects.get_or_create(
+                        name=pt_name,
+                        space=self.space,
+                        defaults={'unit': pt_unit}
+                    )
+
+                    # Create property
+                    try:
+                        amount = float(value)
+                        prop = Property.objects.create(
+                            space=self.space,
+                            property_type=property_type,
+                            property_amount=amount
+                        )
+                        recipe.properties.add(prop)
+                        print(f"    Added nutrition: {pt_name} {amount} {pt_unit}")
+                    except (ValueError, TypeError) as e:
+                        print(f"    Warning: Invalid nutrition value for {key}: {value}")
 
         print(f"  Created recipe: {recipe.name}")
-
-        # Translate recipe if language is specified
-        self.translate_recipe_fields(meal, recipe)
-
         return recipe
 
     def import_by_category(self, category: str, limit: Optional[int] = None, replace: bool = False) -> int:
-        """Import recipes from a specific category
-
-        Args:
-            category: Category name from TheMealDB
-            limit: Maximum number of recipes to import
-            replace: If True, replace existing recipes; if False, skip them
-        """
+        """Import recipes from a specific category"""
         print(f"\nImporting recipes from category: {category}")
 
         meals = self.fetch_meals_by_category(category)
@@ -447,9 +526,9 @@ class TheMealDBImporter:
         print(f"  Found {len(meals)} meals")
 
         imported_count = 0
-        with scope(space=self.space):  # Activate space scope
-            for meal in meals:
-                meal_id = meal.get('idMeal')
+        with scope(space=self.space):
+            for meal_info in meals:
+                meal_id = meal_info.get('idMeal')
                 if not meal_id:
                     continue
 
@@ -458,25 +537,31 @@ class TheMealDBImporter:
                     continue
 
                 try:
-                    self.create_recipe_from_meal(meal_details, replace=replace)
-                    imported_count += 1
+                    # Try AI processing first
+                    recipe_data = self.process_with_ai(meal_details)
+
+                    # Fallback to basic processing
+                    if not recipe_data:
+                        print(f"      Using basic processing...")
+                        recipe_data = self.process_basic(meal_details)
+
+                    if recipe_data:
+                        self.create_recipe_from_data(recipe_data, replace=replace)
+                        imported_count += 1
                 except Exception as e:
                     print(f"  Error importing meal {meal_id}: {e}")
+                    import traceback
+                    traceback.print_exc()
 
         print(f"  Imported {imported_count} recipes")
         return imported_count
 
     def import_random(self, count: int = 1, replace: bool = False) -> int:
-        """Import random recipes
-
-        Args:
-            count: Number of random recipes to import
-            replace: If True, replace existing recipes; if False, skip them
-        """
+        """Import random recipes"""
         print(f"\nImporting {count} random recipe(s)")
 
         imported_count = 0
-        with scope(space=self.space):  # Activate space scope
+        with scope(space=self.space):
             for _ in range(count):
                 response = self.session.get(f"{THEMEALDB_BASE_URL}/random.php")
                 response.raise_for_status()
@@ -485,8 +570,13 @@ class TheMealDBImporter:
                 meals = data.get('meals', [])
                 if meals:
                     try:
-                        self.create_recipe_from_meal(meals[0], replace=replace)
-                        imported_count += 1
+                        recipe_data = self.process_with_ai(meals[0])
+                        if not recipe_data:
+                            recipe_data = self.process_basic(meals[0])
+
+                        if recipe_data:
+                            self.create_recipe_from_data(recipe_data, replace=replace)
+                            imported_count += 1
                     except Exception as e:
                         print(f"  Error importing random recipe: {e}")
 
@@ -496,7 +586,7 @@ class TheMealDBImporter:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Import recipes from TheMealDB to Tandoor Recipes'
+        description='Import recipes from TheMealDB to Tandoor Recipes (AI-Enhanced)'
     )
     parser.add_argument(
         '--count',
@@ -575,7 +665,7 @@ def main():
 
     if args.list_categories:
         print("\nAvailable categories:")
-        categories = importer.fetch_all_categories()
+        categories = importer.fetch_all_categories() if hasattr(importer, 'fetch_all_categories') else []
         for cat in categories:
             print(f"  - {cat}")
         return 0

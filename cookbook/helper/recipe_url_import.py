@@ -383,11 +383,19 @@ def parse_image(image):
 
 
 def parse_servings(servings):
-    if isinstance(servings, str):
+    # Handle numeric types (int, float) - e.g., from AI nutrition data like {"calories": 185, "proteinContent": 7}
+    if isinstance(servings, (int, float)):
+        try:
+            return int(servings)
+        except (ValueError, TypeError):
+            return 1
+    # Handle string types - e.g., "302 kcal" or "7,66g"
+    elif isinstance(servings, str):
         try:
             servings = int(re.search(r'\d+', servings).group())
         except AttributeError:
             servings = 1
+    # Handle list types
     elif isinstance(servings, list):
         try:
             servings = int(re.findall(r'\b\d+\b', str(servings[0]))[0])
