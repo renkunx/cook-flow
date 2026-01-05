@@ -17,6 +17,12 @@ DICTIONARY = {
     # 'lv': 'Latvian',
     'es': 'spanish',
     'sv': 'swedish',
+    # Chinese variants - use 'simple' as PostgreSQL doesn't have built-in Chinese text search config
+    # For better Chinese search, consider installing zhparser extension
+    'zh-hans': 'simple',
+    'zh-hant': 'simple',
+    'zh_Hans': 'simple',
+    'zh_Hant': 'simple',
 }
 
 
