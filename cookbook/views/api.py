@@ -67,6 +67,7 @@ from cookbook.forms import ImportForm, ImportExportBase
 from cookbook.helper import recipe_url_import as helper
 from cookbook.helper.HelperFunctions import str2bool, validate_import_url
 from cookbook.helper.ai_helper import has_monthly_token, can_perform_ai_request, AiCallbackHandler
+from cookbook.helper.ai_config_helper import get_ai_provider_config
 from cookbook.helper.batch_edit_helper import add_to_relation, remove_from_relation, remove_all_from_relation, set_relation
 from cookbook.helper.image_processing import handle_image
 from cookbook.helper.ingredient_parser import IngredientParser
@@ -1135,6 +1136,7 @@ class FoodViewSet(LoggingMixin, TreeMixin, DeleteRelationMixing):
                                     "Do not make up any data. If there is no data available for the given property type that is ok, just return null as a property_amount for that property type. Do not change anything else!"
                                     "Most property types are likely going to be nutritional values. Please do not make up any values, only return values you can find in the sources available to you."
                                     "Only return values if you are sure they are meant for the food given. Under no circumstance are you allowed to change any other value of the given food or change the structure in any way or form."
+                                    "Please respond with a valid JSON object containing the updated properties."
                         },
                         {
                             "type": "text",
@@ -1149,26 +1151,20 @@ class FoodViewSet(LoggingMixin, TreeMixin, DeleteRelationMixing):
             ]
 
             try:
-                ai_request = {
-                    'api_key': ai_provider.api_key,
-                    'model': ai_provider.model_name,
-                    'response_format': {"type": "json_object"},
-                    'messages': messages,
-                }
-                if ai_provider.url:
-                    ai_request['api_base'] = ai_provider.url
+                ai_request = get_ai_provider_config(ai_provider)
+                ai_request['response_format'] = {"type": "json_object"}
+                ai_request['messages'] = messages
                 ai_response = completion(**ai_request)
 
                 response_text = ai_response.choices[0].message.content
 
                 return Response(json.loads(response_text), status=status.HTTP_200_OK)
             except BadRequestError as err:
-                pass
-        response = {
-            'error': True,
-            'msg': 'The AI could not process your request. \n\n' + err.message,
-        }
-        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+                response = {
+                    'error': True,
+                    'msg': 'The AI could not process your request. \n\n' + err.message,
+                }
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
     def destroy(self, *args, **kwargs):
         try:
@@ -1852,6 +1848,7 @@ class RecipeViewSet(LoggingMixin, viewsets.ModelViewSet, DeleteRelationMixing):
                                     "Do not make up any data. If there is no data available for the given property type that is ok, just return null as a property_amount for that property type. Do not change anything else!"
                                     "Most property types are likely going to be nutritional values. Please do not make up any values, only return values you can find in the sources available to you."
                                     "Under no circumstance are you allowed to change any other value of the given food or change the structure in any way or form."
+                                    "Please respond with a valid JSON object containing the updated properties."
                         },
                         {
                             "type": "text",
@@ -1866,26 +1863,20 @@ class RecipeViewSet(LoggingMixin, viewsets.ModelViewSet, DeleteRelationMixing):
             ]
 
             try:
-                ai_request = {
-                    'api_key': ai_provider.api_key,
-                    'model': ai_provider.model_name,
-                    'response_format': {"type": "json_object"},
-                    'messages': messages,
-                }
-                if ai_provider.url:
-                    ai_request['api_base'] = ai_provider.url
+                ai_request = get_ai_provider_config(ai_provider)
+                ai_request['response_format'] = {"type": "json_object"}
+                ai_request['messages'] = messages
                 ai_response = completion(**ai_request)
 
                 response_text = ai_response.choices[0].message.content
 
                 return Response(json.loads(response_text), status=status.HTTP_200_OK)
             except BadRequestError as err:
-                pass
-        response = {
-            'error': True,
-            'msg': 'The AI could not process your request. \n\n' + err.message,
-        }
-        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+                response = {
+                    'error': True,
+                    'msg': 'The AI could not process your request. \n\n' + err.message,
+                }
+                return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(responses=RecipeSerializer(many=False))
     @decorators.action(detail=True, pagination_class=None, methods=['PATCH'], serializer_class=RecipeSerializer)
@@ -2542,14 +2533,9 @@ class AiImportView(APIView):
                 return Response(RecipeFromSourceResponseSerializer(context={'request': request}).to_representation(response), status=status.HTTP_400_BAD_REQUEST)
 
             try:
-                ai_request = {
-                    'api_key': ai_provider.api_key,
-                    'model': ai_provider.model_name,
-                    'response_format': {"type": "json_object"},
-                    'messages': messages,
-                }
-                if ai_provider.url:
-                    ai_request['api_base'] = ai_provider.url
+                ai_request = get_ai_provider_config(ai_provider)
+                ai_request['response_format'] = {"type": "json_object"}
+                ai_request['messages'] = messages
                 ai_response = completion(**ai_request)
             except BadRequestError as err:
                 response = {
@@ -2648,14 +2634,9 @@ class AiStepSortView(APIView):
             ]
 
             try:
-                ai_request = {
-                    'api_key': ai_provider.api_key,
-                    'model': ai_provider.model_name,
-                    'response_format': {"type": "json_object"},
-                    'messages': messages,
-                }
-                if ai_provider.url:
-                    ai_request['api_base'] = ai_provider.url
+                ai_request = get_ai_provider_config(ai_provider)
+                ai_request['response_format'] = {"type": "json_object"}
+                ai_request['messages'] = messages
                 ai_response = completion(**ai_request)
 
                 response_text = ai_response.choices[0].message.content

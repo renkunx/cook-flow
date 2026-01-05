@@ -596,8 +596,8 @@ LANGUAGES = [
     ('sv', _('Swedish')),
     ('tr', _('Turkish')),
     ('uk', _('Ukranian')),
-    # ('zh-Hant', _('Chinese (Traditional Han script)')),
-    # ('zh-Hans', _('Chinese (Simplified Han script)')),
+    ('zh-Hant', _('Chinese (Traditional Han script)')),
+    ('zh-Hans', _('Chinese (Simplified Han script)')),
 ]
 
 # Static files (CSS, JavaScript, Images)

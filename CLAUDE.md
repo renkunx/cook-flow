@@ -269,3 +269,21 @@ docker-compose up
 - **Vue DevTools** for frontend debugging
 - **Browser developer tools** for API inspection
 - **Database queries** - Use Django's query logging
+
+启动后端服务
+
+  cd /Users/renkun/Source/cook-flow
+  source venv/bin/activate
+  python manage.py runserver
+
+启动前端开发服务
+
+  cd /Users/renkun/Source/cook-flow/vue3
+  yarn dev
+
+环境信息
+
+  - Python: 3.14.2
+  - Node.js: 22.19.0
+  - 数据库: PostgreSQL (Supabase)
+  - 时区: Asia/Shanghai
