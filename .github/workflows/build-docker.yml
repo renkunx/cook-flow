@@ -43,7 +43,7 @@ jobs:
           cache-dependency-path: vue3/yarn.lock
       - name: Install dependencies
         working-directory: ./vue3
-        run: yarn install --frozen-lockfile
+        run: yarn install
       - name: Build dependencies
         working-directory: ./vue3
         run: yarn build
