@@ -478,7 +478,7 @@ Recipe text:
         food = Food.objects.create(
             space=self.space,
             name=name,
-            plural_name=name + 's' if not name.endswith('s') else name
+            plural_name=name
         )
         return food
 
@@ -497,8 +497,9 @@ Recipe text:
         unit = Unit.objects.create(
             space=self.space,
             name=name,
-            plural_name=name + 's' if not name.endswith('s') else name
+            plural_name=name
         )
+        
         return unit
 
     def parse_ingredient(self, ingredient_str: str) -> tuple:

@@ -182,7 +182,7 @@ class TheMealDBImporter:
         unit = Unit.objects.create(
             space=self.space,
             name=name,
-            plural_name=name + 's' if not name.endswith('s') else name
+            plural_name=None  # Don't auto-generate plural, let it be empty or manually set
         )
         return unit
 
@@ -255,9 +255,10 @@ Requirements:
 1. Simplify the recipe name: Remove marketing words, keep only the core dish name
 2. Break down long instructions into logical, numbered steps
 3. Assign ingredients to the steps where they are first used
-4. Estimate nutritional values based on the ingredients (be realistic)
-5. Only return valid JSON, no explanations
-6. Use proper UTF-8 Chinese characters
+4. **IMPORTANT**: Use SINGULAR form for all food names (e.g., "Shrimp" not "Shrimps", "tablespoon" not "tablespoons")
+5. Estimate nutritional values based on the ingredients (be realistic)
+6. Only return valid JSON, no explanations
+7. Use proper UTF-8 Chinese characters
 
 Recipe text:"""
             else:
@@ -299,8 +300,9 @@ Requirements:
 1. Simplify the recipe name
 2. Break down instructions into logical steps
 3. Assign ingredients to appropriate steps
-4. Estimate nutritional values realistically
-5. Only return valid JSON
+4. **IMPORTANT**: Use SINGULAR form for all food names and units (e.g., "Shrimp" not "Shrimps", "tablespoon" not "tablespoons")
+5. Estimate nutritional values realistically
+6. Only return valid JSON
 
 Recipe text:"""
 
