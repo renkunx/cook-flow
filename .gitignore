@@ -93,3 +93,7 @@ cookbook/tests/other/docs/reports/tests/pytest.xml
 vue3/src/plugins
 
 local-recipes/
+
+# Git worktrees (Crystal)
+/worktrees/
+/worktree-*/
