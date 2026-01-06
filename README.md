@@ -74,6 +74,73 @@ Because of that there are several ways you can support us
 - **Host at Hetzner** We have been very happy customers of Hetzner for multiple years for all of our projects. If you want to get into self-hosting or are tired of the expensive big providers, their cloud servers are a great place to get started. When you sign up via our [referral link](https://hetzner.cloud/?ref=ISdlrLmr9kGj) you will get 20€ worth of cloud credits and we get a small kickback too.
 - **Let us host for you** We are offering a [hosted version](https://app.tandoor.dev) where all profits support us and the development of tandoor (currently only available in germany).
 
+## CapRover CI/CD 部署
+
+本项目支持通过 GitHub Actions 自动部署到 CapRover 平台。
+
+### 环境配置
+
+项目配置了两个独立的部署环境：
+- **生产环境**：从 `main` 分支部署，使用 `ipusi/cook-flow:latest` 镜像
+- **开发环境**：从 `develop` 分支部署，使用 `ipusi/cook-flow:dev` 镜像
+
+### 首次配置步骤
+
+1. **在 CapRover 创建应用**
+   - 为生产环境创建应用（如 `cook-flow-prod`）
+   - 为开发环境创建应用（如 `cook-flow-dev`）
+   - 在应用的 "Deployment" 标签页启用 App Token 并复制
+
+2. **配置 GitHub Secrets**
+
+   在 GitHub 仓库设置中添加以下 Secrets：
+
+   **生产环境：**
+   - `CAPROVER_SERVER_PROD` - CapRover 服务器地址（如：`https://captain.your-domain.com`）
+   - `APP_NAME_PROD` - 生产环境应用名称
+   - `APP_TOKEN_PROD` - 生产环境应用 Token
+
+   **开发环境：**
+   - `CAPROVER_SERVER_DEV` - CapRover 服务器地址
+   - `APP_NAME_DEV` - 开发环境应用名称
+   - `APP_TOKEN_DEV` - 开发环境应用 Token
+
+### 部署流程
+
+推送代码到相应分支即可自动触发部署：
+
+```
+develop 分支推送
+    ↓
+build-docker.yml 构建 dev 镜像
+    ↓
+deploy-caprover-development.yml 部署到开发环境
+```
+
+```
+main 分支推送
+    ↓
+deploy-caprover-production.yml 部署生产环境
+    (使用已有的 latest 镜像)
+```
+
+```
+tag 推送 (v*)
+    ↓
+build-docker.yml 构建版本镜像和 latest 镜像
+```
+
+### Docker 镜像
+
+构建的 Docker 镜像会推送到 Docker Hub：
+- `ipusi/cook-flow:latest` - 生产环境镜像
+- `ipusi/cook-flow:dev` - 开发环境镜像
+- `ipusi/cook-flow:vX.Y.Z` - 版本标签镜像
+
+### 手动部署
+
+您也可以在 GitHub Actions 页面手动触发部署 workflow。
+
 ## Contributing
 Contributions are welcome but please read [this](https://docs.tandoor.dev/contribute/guidelines/) **BEFORE** contributing anything!
 

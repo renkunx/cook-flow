@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - develop     # develop 分支推送时构建 dev 标签镜像
 
 jobs:
   build-container:
@@ -67,6 +69,8 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest
+            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=sha,prefix=dev-,enable=${{ github.ref == 'refs/heads/develop' }}
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:

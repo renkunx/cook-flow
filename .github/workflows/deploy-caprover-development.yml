@@ -1,0 +1,41 @@
+name: Deploy to CapRover - Development
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 等待并验证镜像可用
+      - name: Wait for image to be available
+        run: |
+          echo "Waiting for image ipusi/cook-flow:dev to be available..."
+          timeout=300
+          elapsed=0
+          while [ $elapsed -lt $timeout ]; do
+            if docker pull ipusi/cook-flow:dev 2>/dev/null; then
+              echo "Image is available!"
+              break
+            fi
+            echo "Image not ready, waiting 10 seconds..."
+            sleep 10
+            elapsed=$((elapsed + 10))
+          done
+          if [ $elapsed -ge $timeout ]; then
+            echo "Timeout waiting for image"
+            exit 1
+          fi
+
+      # 部署到 CapRover
+      - name: Deploy to CapRover Development
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: '${{ secrets.CAPROVER_SERVER_DEV }}'
+          app: '${{ secrets.APP_NAME_DEV }}'
+          token: '${{ secrets.APP_TOKEN_DEV }}'
+          image: 'ipusi/cook-flow:dev'
