@@ -1,0 +1,72 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import RecipeHeader from '../../components/RecipeHeader.astro';
+import IngredientList from '../../components/IngredientList.astro';
+import StepList from '../../components/StepList.astro';
+import NutritionInfo from '../../components/NutritionInfo.astro';
+import CopyButton from '../../components/CopyButton.astro';
+import { getRecipe, extractIngredients } from '../../utils/api';
+
+export const prerender = false;
+
+const { id } = Astro.params;
+
+// 获取菜谱数据
+let recipe;
+let error = null;
+
+try {
+  recipe = await getRecipe(id!);
+} catch (e) {
+  error = e instanceof Error ? e.message : 'Failed to fetch recipe';
+}
+
+// 处理错误情况
+if (error || !recipe) {
+  return Astro.redirect('/?error=' + encodeURIComponent(error || 'Recipe not found'));
+}
+
+// 提取食材列表（从步骤中收集）
+const ingredients = extractIngredients(recipe.steps);
+---
+
+<Layout title={`${recipe.name} - 私房小厨`}>
+  <article class="recipe-detail">
+    <!-- 复制按钮 -->
+    <CopyButton recipe={recipe} ingredients={ingredients} />
+
+    <!-- 菜品头部 -->
+    <RecipeHeader recipe={recipe} />
+
+    <!-- 营养信息 -->
+    {recipe.nutrition && <NutritionInfo nutrition={recipe.nutrition} />}
+
+    <!-- 食材列表 -->
+    <section class="recipe-section">
+      <IngredientList ingredients={ingredients} servings={recipe.servings} />
+    </section>
+
+    <!-- 制作步骤 -->
+    <section class="recipe-section">
+      <StepList steps={recipe.steps} />
+    </section>
+  </article>
+</Layout>
+
+<style>
+  .recipe-detail {
+    max-width: 48rem;
+    margin: 0 auto;
+    padding-bottom: 6rem;
+  }
+
+  .recipe-section {
+    margin-top: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .recipe-section {
+      margin-top: 2rem;
+    }
+  }
+</style>

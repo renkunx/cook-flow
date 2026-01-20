@@ -1,0 +1,183 @@
+---
+import type { Nutrition } from '../utils/api';
+
+interface Props {
+  nutrition: Nutrition;
+}
+
+const { nutrition } = Astro.props;
+const { calories, proteins, fats, carbohydrates } = nutrition;
+
+const items = [
+  { label: '热量', value: calories, unit: 'kcal', icon: '🔥', color: 'from-orange-50 to-orange-100', valueColor: 'text-orange-600' },
+  { label: '蛋白质', value: proteins, unit: 'g', icon: '💪', color: 'from-amber-50 to-amber-100', valueColor: 'text-amber-600' },
+  { label: '脂肪', value: fats, unit: 'g', icon: '🧈', color: 'from-yellow-50 to-yellow-100', valueColor: 'text-yellow-600' },
+  { label: '碳水', value: carbohydrates, unit: 'g', icon: '🌾', color: 'from-red-50 to-red-100', valueColor: 'text-red-600' },
+];
+---
+
+<section class="nutrition-section">
+  <div class="section-header">
+    <div class="section-icon">📊</div>
+    <h2 class="section-title">营养信息</h2>
+  </div>
+
+  <div class="nutrition-grid">
+    {items.map((item) => (
+      <div class={`nutrition-card bg-gradient-to-br ${item.color}`}>
+        <div class="nutrition-icon">{item.icon}</div>
+        <div class="nutrition-info">
+          <div class="nutrition-label">{item.label}</div>
+          <div class={`nutrition-value ${item.valueColor}`}>{item.value}</div>
+          <div class="nutrition-unit">{item.unit}</div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .nutrition-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #FF6B35;
+    margin: 0;
+  }
+
+  .nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .nutrition-card {
+    border-radius: 0.75rem;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 1px 2px 0 rgba(255, 107, 53, 0.05);
+    border: 1px solid #FFE4D6;
+  }
+
+  .nutrition-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .nutrition-info {
+    flex: 1;
+  }
+
+  .nutrition-label {
+    font-size: 0.75rem;
+    color: #666666;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .nutrition-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 0.125rem;
+  }
+
+  .nutrition-unit {
+    font-size: 0.75rem;
+    color: #999999;
+    font-weight: 500;
+  }
+
+  .text-orange-600 {
+    color: #EA580C;
+  }
+
+  .text-amber-600 {
+    color: #D97706;
+  }
+
+  .text-yellow-600 {
+    color: #CA8A04;
+  }
+
+  .text-red-600 {
+    color: #DC2626;
+  }
+
+  .bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to));
+  }
+
+  .from-orange-50 {
+    --tw-gradient-from: #FFF7ED;
+  }
+
+  .to-orange-100 {
+    --tw-gradient-to: #FFEDD5;
+  }
+
+  .from-amber-50 {
+    --tw-gradient-from: #FFFBEB;
+  }
+
+  .to-amber-100 {
+    --tw-gradient-to: #FEF3C7;
+  }
+
+  .from-yellow-50 {
+    --tw-gradient-from: #FEFCE8;
+  }
+
+  .to-yellow-100 {
+    --tw-gradient-to: #FEF9C3;
+  }
+
+  .from-red-50 {
+    --tw-gradient-from: #FEF2F2;
+  }
+
+  .to-red-100 {
+    --tw-gradient-to: #FEE2E2;
+  }
+
+  @media (min-width: 768px) {
+    .section-title {
+      font-size: 1.5rem;
+    }
+
+    .nutrition-grid {
+      gap: 1rem;
+    }
+
+    .nutrition-card {
+      padding: 1.25rem;
+    }
+
+    .nutrition-icon {
+      font-size: 2rem;
+    }
+
+    .nutrition-value {
+      font-size: 1.75rem;
+    }
+  }
+</style>

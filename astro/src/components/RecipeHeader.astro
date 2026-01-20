@@ -1,0 +1,132 @@
+---
+import type { Recipe } from '../utils/api';
+
+interface Props {
+  recipe: Recipe;
+}
+
+const { recipe } = Astro.props;
+const { name, description, image, servings, working_time, waiting_time } = recipe;
+---
+
+<div class="recipe-header">
+  <div class="header-content">
+    <h1 class="recipe-title">{name}</h1>
+
+    {description && (
+      <p class="recipe-description">{description}</p>
+    )}
+  </div>
+
+  {image && (
+    <div class="recipe-image-wrapper">
+      <img
+        src={image}
+        alt={name}
+        class="recipe-image"
+        loading="eager"
+      />
+    </div>
+  )}
+
+  <div class="recipe-meta">
+    <div class="meta-item">
+      <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+      <span>{servings} 人份</span>
+    </div>
+    {working_time && (
+      <div class="meta-item">
+        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>制作 {working_time} 分钟</span>
+      </div>
+    )}
+    {waiting_time && waiting_time > 0 && (
+      <div class="meta-item">
+        <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>等待 {waiting_time} 分钟</span>
+      </div>
+    )}
+  </div>
+</div>
+
+<style>
+  .recipe-header {
+    margin-bottom: 2rem;
+  }
+
+  .header-content {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .recipe-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #FF6B35;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .recipe-description {
+    font-size: 1rem;
+    color: #666666;
+    max-width: 2xl;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .recipe-image-wrapper {
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(255, 107, 53, 0.1), 0 2px 4px -1px rgba(255, 107, 53, 0.06);
+    margin-bottom: 1.5rem;
+  }
+
+  .recipe-image {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .recipe-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #FFF0E6 0%, #FFF8F3 100%);
+    padding: 0.625rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: #2D2D2D;
+    font-weight: 500;
+    border: 1px solid #FFE4D6;
+  }
+
+  .meta-icon {
+    width: 1.125rem;
+    height: 1.125rem;
+    color: #FF6B35;
+  }
+
+  @media (min-width: 768px) {
+    .recipe-title {
+      font-size: 2.5rem;
+    }
+
+    .recipe-description {
+      font-size: 1.125rem;
+    }
+  }
+</style>

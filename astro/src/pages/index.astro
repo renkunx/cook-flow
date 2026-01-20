@@ -1,0 +1,140 @@
+---
+import Layout from '../layouts/Layout.astro';
+import RecipeCard from '../components/RecipeCard.astro';
+import { getRecipes } from '../utils/api';
+
+export const prerender = false;
+
+// 获取菜谱列表
+let recipes;
+let error = null;
+
+try {
+  const response = await getRecipes(1, 20);
+  recipes = response.results;
+} catch (e) {
+  error = e instanceof Error ? e.message : 'Failed to load recipes';
+  recipes = [];
+}
+---
+
+<Layout title="私房小厨 - 美味家常菜谱">
+  <div class="page-hero">
+    <h1 class="page-title">家常美味</h1>
+    <p class="page-subtitle">用心做好每一道菜，分享家的味道</p>
+  </div>
+
+  {error ? (
+    <div class="error-banner">
+      <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <p class="error-title">加载失败</p>
+        <p class="error-message">{error}</p>
+      </div>
+    </div>
+  ) : recipes.length === 0 ? (
+    <div class="empty-state">
+      <div class="empty-icon">🍳</div>
+      <p class="empty-text">暂无菜谱</p>
+    </div>
+  ) : (
+    <div class="recipe-grid">
+      {recipes.map((recipe) => (
+        <RecipeCard recipe={recipe} />
+      ))}
+    </div>
+  )}
+</Layout>
+
+<style>
+  .page-hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding: 2rem 1rem;
+    background: linear-gradient(135deg, #FFF0E6 0%, #FFF8F3 100%);
+    border-radius: 1rem;
+    border: 1px solid #FFE4D6;
+  }
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #FF6B35;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 1rem;
+    color: #666666;
+  }
+
+  .error-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #FEF2F2;
+    border: 1px solid #FEE2E2;
+    border-radius: 0.75rem;
+    color: #991B1B;
+  }
+
+  .error-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .error-title {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .error-message {
+    font-size: 0.875rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #FFE4D6;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty-text {
+    font-size: 1.125rem;
+    color: #666666;
+  }
+
+  .recipe-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .recipe-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .recipe-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+    }
+  }
+</style>

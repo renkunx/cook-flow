@@ -1,0 +1,134 @@
+---
+import type { Ingredient } from '../utils/api';
+
+interface Props {
+  ingredients: Ingredient[];
+  servings: number;
+}
+
+const { ingredients, servings } = Astro.props;
+---
+
+<section class="ingredient-section">
+  <div class="section-header">
+    <div class="section-icon">🥗</div>
+    <h2 class="section-title">食材清单</h2>
+    <span class="servings-tag">（{servings}人份）</span>
+  </div>
+
+  <div class="ingredient-list">
+    {ingredients.map((ingredient) => (
+      <div class="ingredient-item">
+        <div class="ingredient-info">
+          <span class="ingredient-name">{ingredient.food?.name || ''}</span>
+          {ingredient.note && (
+            <span class="ingredient-note">({ingredient.note})</span>
+          )}
+        </div>
+        <div class="ingredient-amount">
+          {ingredient.amount} {ingredient.unit?.name || ''}
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .ingredient-section {
+    margin-bottom: 2rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  .section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #FF6B35;
+    margin: 0;
+  }
+
+  .servings-tag {
+    font-size: 0.875rem;
+    color: #666666;
+    font-weight: 400;
+    margin-left: 0.25rem;
+  }
+
+  .ingredient-list {
+    background: white;
+    border: 1px solid #FFE4D6;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .ingredient-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid #FFF8F3;
+    transition: background-color 0.15s ease;
+  }
+
+  .ingredient-item:last-child {
+    border-bottom: none;
+  }
+
+  .ingredient-item:hover {
+    background: #FFFBF8;
+  }
+
+  .ingredient-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .ingredient-name {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #2D2D2D;
+  }
+
+  .ingredient-note {
+    font-size: 0.8125rem;
+    color: #999999;
+  }
+
+  .ingredient-amount {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #FF6B35;
+    flex-shrink: 0;
+    margin-left: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .section-title {
+      font-size: 1.5rem;
+    }
+
+    .ingredient-item {
+      padding: 1rem 1.25rem;
+    }
+
+    .ingredient-name {
+      font-size: 1rem;
+    }
+
+    .ingredient-amount {
+      font-size: 1rem;
+    }
+  }
+</style>
