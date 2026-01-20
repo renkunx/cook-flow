@@ -23,7 +23,7 @@ const { steps } = Astro.props;
             <h3 class="step-name">{step.name}</h3>
           )}
           <p class="step-text">{step.instruction || ''}</p>
-          {step.time && (
+          {step.time && step.time > 0 && (
             <div class="step-time">
               <svg class="time-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
