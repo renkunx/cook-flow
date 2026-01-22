@@ -34,42 +34,69 @@ const ingredientsData = JSON.stringify(ingredients);
   const recipe = JSON.parse(container?.dataset.recipe || '{}');
   const ingredients = JSON.parse(container?.dataset.ingredients || '[]');
 
+  // 从 properties 中提取营养信息
+  function getNutritionFromProperties(properties) {
+    if (!properties || !Array.isArray(properties)) return null;
+
+    const fieldMapping = {
+      '热量': 'calories',
+      '蛋白质': 'proteins',
+      '脂肪': 'fats',
+      '碳水化合物': 'carbohydrates',
+      '卡路里': 'calories',
+    };
+
+    const nutrition = { calories: 0, proteins: 0, fats: 0, carbohydrates: 0 };
+
+    properties.forEach(prop => {
+      const name = prop.property_type?.name;
+      if (name && fieldMapping[name]) {
+        nutrition[fieldMapping[name]] = prop.property_amount || 0;
+      }
+    });
+
+    // 检查是否有有效数据
+    const hasData = Object.values(nutrition).some(v => v > 0);
+    return hasData ? nutrition : null;
+  }
+
   function generateWechatHTML(recipe, ingredients) {
-    const { name, description, image, nutrition, servings, steps } = recipe;
+    const { name, description, image, nutrition, servings, steps, properties } = recipe;
+
+    // 获取有效的营养信息
+    const effectiveNutrition = nutrition || getNutritionFromProperties(properties);
 
     // 营养信息
     let nutritionHTML = '';
-    if (nutrition) {
+    if (effectiveNutrition) {
       nutritionHTML = `
-        <section style="padding: 20px; background: #FA5151; color: white; margin: 10px 0;">
-          <h2 style="font-size: 18px; margin: 0 0 10px 0;">📊 营养信息</h2>
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 10px; background: rgba(255,255,255,0.2); text-align: center;">
-                <div style="font-size: 14px; opacity: 0.8;">热量</div>
-                <div style="font-size: 20px; font-weight: bold;">${nutrition.calories}</div>
-                <div style="font-size: 12px; opacity: 0.7;">kcal</div>
-              </td>
-              <td style="padding: 10px; background: rgba(255,255,255,0.15); text-align: center;">
-                <div style="font-size: 14px; opacity: 0.8;">蛋白质</div>
-                <div style="font-size: 20px; font-weight: bold;">${nutrition.proteins}</div>
-                <div style="font-size: 12px; opacity: 0.7;">g</div>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; background: rgba(255,255,255,0.15); text-align: center;">
-                <div style="font-size: 14px; opacity: 0.8;">脂肪</div>
-                <div style="font-size: 20px; font-weight: bold;">${nutrition.fats}</div>
-                <div style="font-size: 12px; opacity: 0.7;">g</div>
-              </td>
-              <td style="padding: 10px; background: rgba(255,255,255,0.2); text-align: center;">
-                <div style="font-size: 14px; opacity: 0.8;">碳水</div>
-                <div style="font-size: 20px; font-weight: bold;">${nutrition.carbohydrates}</div>
-                <div style="font-size: 12px; opacity: 0.7;">g</div>
-              </td>
-            </tr>
-          </table>
-        </section>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #FF6B35;">
+          <tr>
+            <td colspan="4" style="padding: 12px 15px; color: white; font-size: 16px; font-weight: bold;">📊 营养信息</td>
+          </tr>
+          <tr>
+            <td style="padding: 15px; text-align: center; color: white; width: 25%;">
+              <div style="font-size: 13px;">热量</div>
+              <div style="font-size: 20px; font-weight: bold; margin-top: 5px;">${effectiveNutrition.calories || 0}</div>
+              <div style="font-size: 12px; margin-top: 3px;">kcal</div>
+            </td>
+            <td style="padding: 15px; text-align: center; color: white; width: 25%; background-color: #FF8C42;">
+              <div style="font-size: 13px;">蛋白质</div>
+              <div style="font-size: 20px; font-weight: bold; margin-top: 5px;">${effectiveNutrition.proteins || 0}</div>
+              <div style="font-size: 12px; margin-top: 3px;">g</div>
+            </td>
+            <td style="padding: 15px; text-align: center; color: white; width: 25%; background-color: #FFAA5D;">
+              <div style="font-size: 13px;">脂肪</div>
+              <div style="font-size: 20px; font-weight: bold; margin-top: 5px;">${effectiveNutrition.fats || 0}</div>
+              <div style="font-size: 12px; margin-top: 3px;">g</div>
+            </td>
+            <td style="padding: 15px; text-align: center; color: white; width: 25%; background-color: #FFC77B;">
+              <div style="font-size: 13px;">碳水</div>
+              <div style="font-size: 20px; font-weight: bold; margin-top: 5px;">${effectiveNutrition.carbohydrates || 0}</div>
+              <div style="font-size: 12px; margin-top: 3px;">g</div>
+            </td>
+          </tr>
+        </table>
       `;
     }
 
@@ -77,37 +104,47 @@ const ingredientsData = JSON.stringify(ingredients);
     let ingredientsHTML = '';
     if (ingredients && ingredients.length > 0) {
       const ingredientRows = ingredients.map(ing => {
-        const note = ing.note ? ` <span style="color: #888; font-size: 14px;">(${ing.note})</span>` : '';
+        const note = ing.note ? ` <span style="color: #999; font-size: 13px;">（${ing.note}）</span>` : '';
         return `
-          <tr style="border-bottom: 1px solid #E8E8E8;">
-            <td style="padding: 12px 8px; color: #333;">${ing.food?.name || ''}${note}</td>
-            <td style="padding: 12px 8px; text-align: right; color: #FA5151; font-weight: 600;">${ing.amount || ''} ${ing.unit?.name || ''}</td>
+          <tr>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #FFE4D6; color: #333; font-size: 15px;">${ing.food?.name || ''}${note}</td>
+            <td style="padding: 12px 15px; border-bottom: 1px solid #FFE4D6; text-align: right; color: #FF6B35; font-weight: 600; font-size: 15px;">${ing.amount || ''} ${ing.unit?.name || ''}</td>
           </tr>
         `;
       }).join('');
 
       ingredientsHTML = `
-        <section style="margin: 20px 0;">
-          <h2 style="font-size: 18px; font-weight: bold; margin: 0 0 15px 0; color: #333;">🥗 食材清单<span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">（${servings}人份）</span></h2>
-          <table style="width: 100%; border-collapse: collapse; background: #F7F7F7; border-radius: 8px; overflow: hidden;">
-            ${ingredientRows}
-          </table>
-        </section>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background-color: white; border-radius: 8px;">
+          <tr>
+            <td colspan="2" style="padding: 12px 15px; background-color: #FFE4D6; color: #FF6B35; font-size: 16px; font-weight: bold;">🥗 食材清单 <span style="font-size: 14px; font-weight: normal; color: #666;">（${servings}人份）</span></td>
+          </tr>
+          ${ingredientRows}
+        </table>
       `;
     }
 
     // 制作步骤
     const stepsHTML = (steps || []).map((step, index) => {
-      const timeTag = step.time ? `<span style="display: inline-block; margin-top: 8px; padding: 4px 12px; background: #F0F0F0; border-radius: 4px; font-size: 13px; color: #666;">⏱ ${step.time} 分钟</span>` : '';
+      const timeTag = step.time ? `<div style="margin-top: 10px; padding: 6px 12px; background-color: #FFF0E6; color: #FF6B35; font-size: 13px; display: inline-block; border-radius: 4px;">⏱ ${step.time} 分钟</div>` : '';
       return `
-        <div style="margin: 20px 0; padding: 15px; background: white; border-left: 4px solid #FA5151; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-          <div style="display: flex; align-items: center; margin-bottom: 10px;">
-            <span style="display: inline-block; width: 24px; height: 24px; background: #FA5151; color: white; text-align: center; line-height: 24px; border-radius: 50%; font-weight: bold; margin-right: 10px;">${index + 1}</span>
-            ${step.name ? `<span style="font-size: 16px; font-weight: bold; color: #333;">${step.name}</span>` : ''}
-          </div>
-          <div style="font-size: 15px; color: #555; line-height: 1.8; white-space: pre-wrap;">${step.instruction || ''}</div>
-          ${timeTag}
-        </div>
+        <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background-color: white;">
+          <tr>
+            <td style="padding: 15px; border-left: 4px solid #FF6B35;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 0; vertical-align: top; width: 30px;">
+                    <span style="display: inline-block; width: 26px; height: 26px; background-color: #FF6B35; color: white; text-align: center; line-height: 26px; border-radius: 50%; font-weight: bold; font-size: 14px;">${index + 1}</span>
+                  </td>
+                  <td style="padding: 0 0 0 12px; vertical-align: top;">
+                    ${step.name ? `<div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px;">${step.name}</div>` : ''}
+                    <div style="font-size: 15px; color: #555; line-height: 1.8; white-space: pre-wrap;">${step.instruction || ''}</div>
+                    ${timeTag}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       `;
     }).join('');
 
@@ -116,22 +153,18 @@ const ingredientsData = JSON.stringify(ingredients);
 <html>
 <head>
   <meta charset="utf-8">
-  <style>
-    body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 677px; margin: 0 auto; }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <h1 style="font-size: 24px; font-weight: bold; text-align: center; margin: 0 0 15px 0; color: #333;">${name}</h1>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #FFF5F0;">
+  <div style="max-width: 677px; margin: 0 auto; padding: 20px; background-color: #FFF5F0;">
+    <h1 style="font-size: 24px; font-weight: bold; text-align: center; margin: 0 0 15px 0; color: #FF6B35;">${name}</h1>
     ${description ? `<p style="font-size: 15px; color: #666; text-align: center; margin: 0 0 20px 0; line-height: 1.6;">${description}</p>` : ''}
-    ${image ? `<img src="${image}" style="width: 100%; border-radius: 8px; margin: 0 0 20px 0;" alt="${name}">` : ''}
+    ${image ? `<img src="${image}" style="width: 100%; border-radius: 8px; margin: 0 0 20px 0; display: block;" alt="${name}">` : ''}
     ${nutritionHTML}
     ${ingredientsHTML}
-    <section style="margin: 20px 0;">
+    <div style="margin: 20px 0;">
       <h2 style="font-size: 18px; font-weight: bold; margin: 0 0 15px 0; color: #333;">👨‍🍳 制作步骤</h2>
       ${stepsHTML}
-    </section>
+    </div>
     <div style="text-align: center; padding: 30px 0; margin-top: 40px; border-top: 1px solid #E8E8E8; color: #999; font-size: 13px;">
       — 本文由 私房小厨 提供 —
     </div>

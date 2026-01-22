@@ -39,7 +39,9 @@ const ingredients = extractIngredients(recipe.steps);
     <RecipeHeader recipe={recipe} />
 
     <!-- 营养信息 -->
-    {recipe.nutrition && <NutritionInfo nutrition={recipe.nutrition} />}
+    {(recipe.nutrition || recipe.properties) && (
+      <NutritionInfo nutrition={recipe.nutrition} properties={recipe.properties} />
+    )}
 
     <!-- 食材列表 -->
     <section class="recipe-section">

@@ -1,18 +1,54 @@
 ---
-import type { Nutrition } from '../utils/api';
+import type { Recipe, Nutrition } from '../utils/api';
 
 interface Props {
-  nutrition: Nutrition;
+  nutrition?: Nutrition | null;
+  properties?: any[];
 }
 
-const { nutrition } = Astro.props;
-const { calories, proteins, fats, carbohydrates } = nutrition;
+const { nutrition, properties = [] } = Astro.props;
 
+// 从 properties 中提取营养信息作为备选
+const getNutritionFromProperties = (props: any[]) => {
+  const nutritionMap: Record<string, number> = {};
+
+  props?.forEach((prop: any) => {
+    const name = prop.property_type?.name;
+    if (name) {
+      nutritionMap[name] = prop.property_amount;
+    }
+  });
+
+  // 映射字段名称
+  const fieldMapping: Record<string, string> = {
+    '热量': 'calories',
+    '蛋白质': 'proteins',
+    '脂肪': 'fats',
+    '碳水化合物': 'carbohydrates',
+    '卡路里': 'calories',
+  };
+
+  const result: Record<string, number> = {};
+
+  // 遍历并映射
+  Object.entries(nutritionMap).forEach(([name, amount]) => {
+    const mappedName = fieldMapping[name] || name;
+    result[mappedName] = amount;
+  });
+
+  return result;
+};
+
+// 使用 nutrition 或 properties 中的数据
+const effectiveNutrition = nutrition || getNutritionFromProperties(properties);
+const hasNutrition = Object.keys(effectiveNutrition).length > 0;
+
+// 营养信息卡片数据
 const items = [
-  { label: '热量', value: calories, unit: 'kcal', icon: '🔥', color: 'from-orange-50 to-orange-100', valueColor: 'text-orange-600' },
-  { label: '蛋白质', value: proteins, unit: 'g', icon: '💪', color: 'from-amber-50 to-amber-100', valueColor: 'text-amber-600' },
-  { label: '脂肪', value: fats, unit: 'g', icon: '🧈', color: 'from-yellow-50 to-yellow-100', valueColor: 'text-yellow-600' },
-  { label: '碳水', value: carbohydrates, unit: 'g', icon: '🌾', color: 'from-red-50 to-red-100', valueColor: 'text-red-600' },
+  { label: '热量', value: effectiveNutrition.calories || 0, unit: 'kcal', icon: '🔥', color: 'from-orange-50 to-orange-100', valueColor: 'text-orange-600' },
+  { label: '蛋白质', value: effectiveNutrition.proteins || 0, unit: 'g', icon: '💪', color: 'from-amber-50 to-amber-100', valueColor: 'text-amber-600' },
+  { label: '脂肪', value: effectiveNutrition.fats || 0, unit: 'g', icon: '🧈', color: 'from-yellow-50 to-yellow-100', valueColor: 'text-yellow-600' },
+  { label: '碳水', value: effectiveNutrition.carbohydrates || 0, unit: 'g', icon: '🌾', color: 'from-red-50 to-red-100', valueColor: 'text-red-600' },
 ];
 ---
 
