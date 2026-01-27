@@ -432,6 +432,8 @@ class AiLog(models.Model, PermissionModelMixin):
     F_STEP_SORT = 'STEP_SORT'
     F_FOOD_PROPERTIES = 'FOOD_PROPERTIES'
     F_RECIPE_PROPERTIES = 'RECIPE_PROPERTIES'
+    F_IMAGE_PROMPT = 'IMAGE_PROMPT'
+    F_IMAGE_GENERATION = 'IMAGE_GENERATION'
 
     ai_provider = models.ForeignKey(AiProvider, on_delete=models.SET_NULL, null=True)
     function = models.CharField(max_length=64)

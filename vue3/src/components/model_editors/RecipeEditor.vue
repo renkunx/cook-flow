@@ -47,6 +47,20 @@
                             </v-col>
                         </v-row>
 
+                        <v-row v-if="isUpdate()">
+                            <v-col cols="12" class="text-center">
+                                <v-btn
+                                    color="primary"
+                                    variant="tonal"
+                                    prepend-icon="$ai"
+                                    :loading="aiImageGenerateLoading"
+                                    @click="showAiImageProviderDialog"
+                                    v-if="useUserPreferenceStore().activeSpace.aiEnabled">
+                                    {{ $t('AI_Generate_Image') }}
+                                </v-btn>
+                            </v-col>
+                        </v-row>
+
                         <v-label>{{ $t('Keywords') }}</v-label>
                         <model-select mode="tags" v-model="editingObj.keywords" model="Keyword" allow-create></model-select>
                         <v-row dense>
@@ -176,6 +190,18 @@
         </v-card>
     </v-dialog>
 
+    <ai-image-provider-dialog
+        v-model="aiImageProviderDialog"
+        @generate="handleAiImageGenerate">
+    </ai-image-provider-dialog>
+
+    <ai-image-preview-dialog
+        v-model="aiImagePreviewDialog"
+        @save="handleAiImageSave"
+        @regenerate="handleAiImageRegenerate"
+        @cancel="handleAiImageCancel">
+    </ai-image-preview-dialog>
+
 </template>
 
 <script setup lang="ts">
@@ -199,6 +225,9 @@ import DeleteConfirmDialog from "@/components/dialogs/DeleteConfirmDialog.vue";
 import {ErrorMessageType, useMessageStore} from "@/stores/MessageStore.ts";
 import AiActionButton from "@/components/buttons/AiActionButton.vue";
 import NumberScalerDialog from "@/components/inputs/NumberScalerDialog.vue";
+import AiImageProviderDialog from "@/components/dialogs/AiImageProviderDialog.vue";
+import AiImagePreviewDialog from "@/components/dialogs/AiImagePreviewDialog.vue";
+import {getCookie} from "@/utils/cookie";
 
 
 const props = defineProps({
@@ -233,6 +262,12 @@ const {fileApiLoading, updateRecipeImage} = useFileApi()
 const file = shallowRef<File | null>(null)
 
 const aiStepSortLoading = ref(false)
+
+// AI Image Generate
+const aiImageGenerateLoading = ref(false)
+const aiImageProviderDialog = ref(false)
+const aiImagePreviewDialog = ref(false)
+const currentAiImageProviders = ref<{ promptProviderId: number; imageProviderId: number } | null>(null)
 
 onMounted(() => {
     initializeEditor()
@@ -376,6 +411,82 @@ function scaleRecipe(targetServings: number) {
         })
     })
     editingObj.value.servings = targetServings
+}
+
+/**
+ * Show AI Image Provider Dialog
+ */
+function showAiImageProviderDialog() {
+    aiImageProviderDialog.value = true
+}
+
+/**
+ * Handle AI Image Generate
+ */
+async function handleAiImageGenerate(providers: { promptProviderId: number; imageProviderId: number }) {
+    currentAiImageProviders.value = providers
+    aiImageGenerateLoading.value = true
+
+    try {
+        const response = await fetch('/api/ai-recipe-image/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                recipe_id: editingObj.value.id,
+                prompt_provider_id: providers.promptProviderId,
+                image_provider_id: providers.imageProviderId,
+            })
+        })
+
+        if (response.ok) {
+            const data = await response.json()
+            // Hide provider dialog and show preview
+            aiImageProviderDialog.value = false
+            // Get the preview dialog component reference and call showPreview
+            const previewDialog = document.querySelector('.v-dialog--active') as any
+            if (previewDialog && previewDialog.__vueParentComponent?.exposed?.showPreview) {
+                previewDialog.__vueParentComponent.exposed.showPreview(data)
+            }
+            // Refresh recipe to get the new image
+            setupState(props.item, props.itemId)
+        } else {
+            const error = await response.json()
+            useMessageStore().addError(ErrorMessageType.FETCH_ERROR, error)
+            aiImageProviderDialog.value = false
+        }
+    } catch (err) {
+        useMessageStore().addError(ErrorMessageType.FETCH_ERROR, err)
+        aiImageProviderDialog.value = false
+    } finally {
+        aiImageGenerateLoading.value = false
+    }
+}
+
+/**
+ * Handle AI Image Save
+ */
+function handleAiImageSave(data: { url: string; prompt: string }) {
+    // Image is already saved via API, just refresh
+    setupState(props.item, props.itemId)
+}
+
+/**
+ * Handle AI Image Regenerate
+ */
+function handleAiImageRegenerate() {
+    if (currentAiImageProviders.value) {
+        handleAiImageGenerate(currentAiImageProviders.value)
+    }
+}
+
+/**
+ * Handle AI Image Cancel
+ */
+function handleAiImageCancel() {
+    aiImagePreviewDialog.value = false
 }
 
 </script>

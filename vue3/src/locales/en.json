@@ -1,5 +1,12 @@
 {
   "AI": "AI",
+  "AI_Generate_Image": "AI Generate Image",
+  "AI_Generated_Image_Preview": "AI Generated Image Preview",
+  "AI_Image_Provider_Help": "You can choose different AI providers for generating the image description (Prompt AI) and creating the actual image (Image AI). Some models are better at text analysis while others specialize in image generation.",
+  "Image_AI": "Image AI",
+  "Prompt_AI": "Prompt AI",
+  "Prompt_Used": "Prompt Used",
+  "Regenerate": "Regenerate",
   "AIImportSubtitle": "Use AI to import images of recipes.",
   "AISettingsHostedHelp": "You can enable AI features or change available credits by managing your subscription.",
   "API": "API",

@@ -42,7 +42,7 @@ from django_scopes import scopes_disabled
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view, OpenApiExample, inline_serializer
 from icalendar import Calendar, Event
-from litellm import completion, BadRequestError
+from litellm import completion, image_generation, BadRequestError
 from oauth2_provider.models import AccessToken
 from recipe_scrapers import scrape_html
 from recipe_scrapers._exceptions import NoSchemaFoundInWildMode
@@ -67,7 +67,7 @@ from cookbook.forms import ImportForm, ImportExportBase
 from cookbook.helper import recipe_url_import as helper
 from cookbook.helper.HelperFunctions import str2bool, validate_import_url
 from cookbook.helper.ai_helper import has_monthly_token, can_perform_ai_request, AiCallbackHandler
-from cookbook.helper.ai_config_helper import get_ai_provider_config
+from cookbook.helper.ai_config_helper import get_ai_provider_config, _resolve_env_var
 from cookbook.helper.batch_edit_helper import add_to_relation, remove_from_relation, remove_all_from_relation, set_relation
 from cookbook.helper.image_processing import handle_image
 from cookbook.helper.ingredient_parser import IngredientParser
@@ -2649,6 +2649,191 @@ class AiStepSortView(APIView):
                     'msg': 'The AI could not process your request. \n\n' + err.message,
                 }
                 return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AiRecipeImageView(APIView):
+    """
+    AI 生成菜谱主图 API
+    支持分离的 Prompt AI 和 Image AI Provider
+    """
+    throttle_classes = [AiEndpointThrottle]
+    permission_classes = [CustomIsUser & CustomTokenHasReadWriteScope]
+
+    @extend_schema(
+        request=inline_serializer(
+            'AiRecipeImageRequest',
+            fields={
+                'recipe_id': IntegerField(help_text='菜谱 ID'),
+                'prompt_provider_id': IntegerField(help_text='Prompt AI Provider ID'),
+                'image_provider_id': IntegerField(help_text='Image AI Provider ID'),
+            }
+        ),
+        responses=inline_serializer(
+            'AiRecipeImageResponse',
+            fields={
+                'image_url': CharField(help_text='生成的图片 URL'),
+                'prompt_used': CharField(help_text='使用的 Prompt'),
+                'prompt_provider': CharField(help_text='Prompt AI 提供商'),
+                'image_provider': CharField(help_text='Image AI 提供商'),
+                'image_model': CharField(help_text='Image AI 模型'),
+            }
+        )
+    )
+    def post(self, request, *args, **kwargs):
+        """使用 AI 生成菜谱主图"""
+        # 获取请求数据
+        recipe_id = request.data.get('recipe_id')
+        prompt_provider_id = request.data.get('prompt_provider_id')
+        image_provider_id = request.data.get('image_provider_id')
+
+        # 验证必填参数
+        if not recipe_id:
+            return Response({'error': True, 'msg': _('Recipe ID is required')}, status=status.HTTP_400_BAD_REQUEST)
+        if not prompt_provider_id:
+            return Response({'error': True, 'msg': _('Prompt AI Provider ID is required')}, status=status.HTTP_400_BAD_REQUEST)
+        if not image_provider_id:
+            return Response({'error': True, 'msg': _('Image AI Provider ID is required')}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 验证 AI 额度
+        if not can_perform_ai_request(request.space):
+            return Response({
+                'error': True,
+                'msg': _("You don't have any credits remaining to use AI or AI features are not enabled for your space."),
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取 AI Provider
+        prompt_ai_provider = AiProvider.objects.filter(
+            pk=prompt_provider_id
+        ).filter(Q(space=request.space) | Q(space__isnull=True)).first()
+
+        image_ai_provider = AiProvider.objects.filter(
+            pk=image_provider_id
+        ).filter(Q(space=request.space) | Q(space__isnull=True)).first()
+
+        if not prompt_ai_provider:
+            return Response({'error': True, 'msg': _('Prompt AI Provider not found')}, status=status.HTTP_400_BAD_REQUEST)
+        if not image_ai_provider:
+            return Response({'error': True, 'msg': _('Image AI Provider not found')}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 获取菜谱
+        recipe = get_object_or_404(Recipe, pk=recipe_id)
+
+        # 阶段一：使用 LLM 生成图像 prompt
+        try:
+            litellm.callbacks = [AiCallbackHandler(request.space, request.user, prompt_ai_provider, AiLog.F_IMAGE_PROMPT)]
+
+            # 构建菜谱上下文
+            recipe_context = self._build_recipe_context(recipe)
+
+            # LLM prompt 用于生成图像描述
+            llm_messages = [
+                {
+                    "role": "system",
+                    "content": "You are a professional food photographer and food writer specializing in creating detailed AI image generation prompts. Always respond with valid JSON only."
+                },
+                {
+                    "role": "user",
+                    "content": f"""Based on the following recipe information, generate a professional AI image generation prompt for food photography.
+
+Recipe Name: {recipe_context['name']}
+Description: {recipe_context['description']}
+Main Ingredients: {recipe_context['ingredients']}
+
+Generate a prompt following this structure (respond with JSON only):
+{{
+    "prompt": "A professional food photography hero shot of [dish name], [angle], [lighting]. The dish features [key ingredients and characteristics]. Composition: [composition]. Lighting: [lighting type and direction]. Styling: [styling elements]. Background: [background description]. Mood: [overall mood]. Photography style: [photography style], shot with [lens type], shallow depth of field, food magazine quality, appetizing and fresh."
+}}
+
+Requirements:
+1. The prompt must be in English
+2. Be specific and vivid
+3. Highlight the dish's features and colors
+4. Include professional photography terminology
+5. Focus on making the food look appetizing"""
+                }
+            ]
+
+            # 调用 LLM
+            ai_request = get_ai_provider_config(prompt_ai_provider)
+            ai_request['messages'] = llm_messages
+            ai_request['response_format'] = {"type": "json_object"}
+            ai_response = completion(**ai_request)
+
+            response_text = ai_response.choices[0].message.content
+            prompt_data = json.loads(response_text)
+            image_prompt = prompt_data.get('prompt', '')
+
+            if not image_prompt:
+                raise ValueError("Failed to generate image prompt")
+
+        except Exception as e:
+            return Response({
+                'error': True,
+                'msg': f'Failed to generate image prompt: {str(e)}',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 阶段二：使用图像生成 API 生成图片
+        try:
+            litellm.callbacks = [AiCallbackHandler(request.space, request.user, image_ai_provider, AiLog.F_IMAGE_GENERATION)]
+
+            # 调用图像生成 API
+            image_response = image_generation(
+                model=image_ai_provider.model_name,
+                prompt=image_prompt,
+                api_key=_resolve_env_var(image_ai_provider.api_key),
+            )
+
+            # 获取生成的图片 URL
+            if 'data' not in image_response or len(image_response['data']) == 0:
+                raise ValueError("No image generated")
+
+            generated_image_url = image_response['data'][0].get('url', '')
+            if not generated_image_url:
+                raise ValueError("No image URL in response")
+
+            # 下载生成的图片
+            downloaded_image = self._download_image(generated_image_url)
+
+            # 保存到菜谱
+            img = handle_image(request, downloaded_image, '.png')
+            if img:
+                recipe.image.save(f'{uuid.uuid4()}_{recipe.pk}.png', img)
+                recipe.save()
+
+            return Response({
+                'image_url': recipe.image.url if recipe.image else None,
+                'prompt_used': image_prompt,
+                'prompt_provider': prompt_ai_provider.name,
+                'image_provider': image_ai_provider.name,
+                'image_model': image_ai_provider.model_name,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({
+                'error': True,
+                'msg': f'Failed to generate image: {str(e)}',
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    def _build_recipe_context(self, recipe):
+        """构建菜谱上下文信息"""
+        # 提取食材列表
+        ingredients = []
+        for step in recipe.steps.all():
+            for ing in step.ingredients.all():
+                if ing.food:
+                    ingredients.append(ing.food.name)
+
+        return {
+            'name': recipe.name,
+            'description': recipe.description or '',
+            'ingredients': ', '.join(ingredients[:10]) if ingredients else '',
+        }
+
+    def _download_image(self, url):
+        """从 URL 下载图像"""
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        return File(io.BytesIO(response.content))
 
 
 class AppImportView(APIView):

@@ -46,11 +46,13 @@ import uuid
 class HowToCookImporter:
     """Importer for HowToCook markdown recipes"""
 
-    def __init__(self, space: Space, user: User):
+    def __init__(self, space: Space, user: User, replace: bool = False):
         self.space = space
         self.user = user
+        self.replace = replace
         self.imported_count = 0
         self.skipped_count = 0
+        self.replaced_count = 0
         self.error_count = 0
 
         # Load AI config
@@ -354,9 +356,13 @@ class HowToCookImporter:
             # Check if recipe already exists
             existing = Recipe.objects.filter(name=recipe_data['name'], space=self.space).first()
             if existing:
-                print(f"      跳过（已存在）: {recipe_data['name']}")
-                self.skipped_count += 1
-                return None
+                if self.replace:
+                    print(f"      替换已存在的菜谱: {recipe_data['name']}")
+                    existing.delete()
+                else:
+                    print(f"      跳过（已存在）: {recipe_data['name']}")
+                    self.skipped_count += 1
+                    return None
 
             # Create recipe
             recipe = Recipe.objects.create(
@@ -433,7 +439,13 @@ class HowToCookImporter:
             if nutrition:
                 self._add_nutrition_properties(recipe, nutrition)
 
-            self.imported_count += 1
+            # Track if this was a replacement
+            was_existing = 'existing' in locals() and existing is not None
+            if was_existing:
+                self.replaced_count += 1
+            else:
+                self.imported_count += 1
+
             print(f"      ✓ 导入成功: {recipe_data['name']}")
             if recipe_data.get('difficulty'):
                 print(f"        难度: {recipe_data['difficulty']} 星")
@@ -589,15 +601,25 @@ class HowToCookImporter:
             # Parse and create recipe
             recipe_data = self.parse_markdown_recipe(md_file, images)
             if recipe_data:
-                # Optimize with AI (if available)
-                recipe_data = self._optimize_recipe_with_ai(recipe_data, images)
+                # Check if recipe already exists (using original name) BEFORE AI processing
+                original_name = recipe_data['name']
+                existing = Recipe.objects.filter(name=original_name, space=self.space).first()
 
-                # Create recipe
-                self.create_recipe(recipe_data, category or recipe_dir.parent.name)
+                # Only use AI optimization if recipe doesn't exist OR in replace mode
+                if existing and not self.replace:
+                    print(f"    跳过（已存在，无需 AI 处理）: {original_name}")
+                    self.skipped_count += 1
+                else:
+                    # Need AI optimization (new recipe or replace mode)
+                    recipe_data = self._optimize_recipe_with_ai(recipe_data, images)
+
+                    # Create recipe
+                    self.create_recipe(recipe_data, category or recipe_dir.parent.name)
 
         # Print summary
         print(f"\n导入完成!")
         print(f"  成功导入: {self.imported_count}")
+        print(f"  替换: {self.replaced_count}")
         print(f"  跳过（已存在）: {self.skipped_count}")
         print(f"  失败: {self.error_count}")
 
@@ -612,6 +634,11 @@ def main():
     parser.add_argument(
         '--category',
         help='Specific category to import (e.g., meat_dish, vegetable_dish)'
+    )
+    parser.add_argument(
+        '--replace',
+        action='store_true',
+        help='Replace existing recipes instead of skipping them'
     )
 
     args = parser.parse_args()
@@ -635,7 +662,7 @@ def main():
         print(f"使用用户: {user.username}")
 
         # Import recipes
-        importer = HowToCookImporter(space, user)
+        importer = HowToCookImporter(space, user, replace=args.replace)
         importer.import_from_directory(args.path, args.category)
 
 
