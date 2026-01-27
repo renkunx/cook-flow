@@ -6,7 +6,13 @@ interface Props {
 }
 
 const { recipe } = Astro.props;
-const { name, description, image, servings, working_time = 0, waiting_time = 0 } = recipe;
+const { name, description, image, servings, working_time = 0, waiting_time = 0, difficulty } = recipe;
+
+// 生成难度星星
+function getDifficultyStars(level?: number | null) {
+  if (!level) return '';
+  return '★'.repeat(level);
+}
 ---
 
 <div class="recipe-header">
@@ -36,6 +42,14 @@ const { name, description, image, servings, working_time = 0, waiting_time = 0 }
       </svg>
       <span>{servings} 人份</span>
     </div>
+    {difficulty && (
+      <div class="meta-item meta-difficulty">
+        <svg class="meta-icon" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+        <span>{getDifficultyStars(difficulty)} 难度</span>
+      </div>
+    )}
     {working_time > 0 && (
       <div class="meta-item">
         <svg class="meta-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,6 +131,10 @@ const { name, description, image, servings, working_time = 0, waiting_time = 0 }
   .meta-icon {
     width: 1.125rem;
     height: 1.125rem;
+    color: #FF6B35;
+  }
+
+  .meta-difficulty {
     color: #FF6B35;
   }
 

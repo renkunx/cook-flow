@@ -47,6 +47,10 @@
                             <div><i class="fas fa-hourglass-half fa-fw mr-1"></i> {{ recipe.waitingTime }} min</div>
                             <div class="text-grey">{{ $t('WaitingTime') }}</div>
                         </v-col>
+                        <v-col class="pt-1 pb-1" v-if="recipe.difficulty">
+                            <div class="text-orange-darken-2"><i class="fas fa-star fa-fw mr-1"></i> {{ '★'.repeat(recipe.difficulty) }}</div>
+                            <div class="text-grey">{{ $t('Difficulty') }}</div>
+                        </v-col>
                         <v-col class="pt-1 pb-1">
 
                             <div class="cursor-pointer">
@@ -101,6 +105,10 @@
                             <v-col>
                                 <div><i class="fas fa-hourglass-half fa-fw mr-1"></i> {{ recipe.waitingTime }} {{ $t('min') }}</div>
                                 <div class="text-grey">{{ $t('WaitingTime') }}</div>
+                            </v-col>
+                            <v-col v-if="recipe.difficulty">
+                                <div class="text-orange-darken-2"><i class="fas fa-star fa-fw mr-1"></i> {{ '★'.repeat(recipe.difficulty) }}</div>
+                                <div class="text-grey">{{ $t('Difficulty') }}</div>
                             </v-col>
                             <v-col>
                                 <div class="cursor-pointer">

@@ -93,13 +93,19 @@ export interface Recipe {
      */
     workingTime?: number;
     /**
-     * 
+     *
      * @type {number}
      * @memberof Recipe
      */
     waitingTime?: number;
     /**
-     * 
+     *
+     * @type {number}
+     * @memberof Recipe
+     */
+    difficulty?: number | null;
+    /**
+     *
      * @type {User}
      * @memberof Recipe
      */
@@ -230,6 +236,7 @@ export function RecipeFromJSONTyped(json: any, ignoreDiscriminator: boolean): Re
         'steps': ((json['steps'] as Array<any>).map(StepFromJSON)),
         'workingTime': json['working_time'] == null ? undefined : json['working_time'],
         'waitingTime': json['waiting_time'] == null ? undefined : json['waiting_time'],
+        'difficulty': json['difficulty'] == null ? undefined : json['difficulty'],
         'createdBy': UserFromJSON(json['created_by']),
         'createdAt': (new Date(json['created_at'])),
         'updatedAt': (new Date(json['updated_at'])),
@@ -262,6 +269,7 @@ export function RecipeToJSON(value?: Omit<Recipe, 'image'|'createdBy'|'createdAt
         'steps': ((value['steps'] as Array<any>).map(StepToJSON)),
         'working_time': value['workingTime'],
         'waiting_time': value['waitingTime'],
+        'difficulty': value['difficulty'],
         'source_url': value['sourceUrl'],
         'internal': value['internal'],
         'show_ingredient_overview': value['showIngredientOverview'],

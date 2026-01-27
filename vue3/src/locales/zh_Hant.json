@@ -162,6 +162,7 @@
     "Deleted": "已刪除",
     "Description": "描述",
     "Description_Replace": "描述替換",
+    "Difficulty": "難度",
     "DeviceSettings": "裝置設定",
     "DeviceSettingsHelp": "為了讓 Tandoor 在您使用的任何地方都能正常顯示，這些設定僅儲存在此裝置上。",
     "Disable": "停用",

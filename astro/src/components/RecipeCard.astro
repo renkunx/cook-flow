@@ -6,7 +6,13 @@ interface Props {
 }
 
 const { recipe } = Astro.props;
-const { id, name, description, image, servings, rating } = recipe;
+const { id, name, description, image, servings, difficulty, rating } = recipe;
+
+// 生成难度星星
+function getDifficultyStars(level?: number | null) {
+  if (!level) return '';
+  return '★'.repeat(level);
+}
 ---
 
 <a href={`/recipe/${id}`} class="recipe-card">
@@ -41,6 +47,15 @@ const { id, name, description, image, servings, rating } = recipe;
         </svg>
         <span>{servings}人份</span>
       </div>
+
+      {difficulty && (
+        <div class="meta-item meta-difficulty">
+          <svg class="meta-icon" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          <span>{getDifficultyStars(difficulty)}</span>
+        </div>
+      )}
 
       {rating && (
         <div class="meta-item meta-rating">
@@ -151,6 +166,11 @@ const { id, name, description, image, servings, rating } = recipe;
 
   .meta-rating {
     color: #FFB347;
+    font-weight: 500;
+  }
+
+  .meta-difficulty {
+    color: #FF6B35;
     font-weight: 500;
   }
 

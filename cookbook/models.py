@@ -1096,6 +1096,7 @@ class Recipe(ExportModelOperationsMixin('recipe'), models.Model, PermissionModel
     steps = models.ManyToManyField(Step, blank=True)
     working_time = models.IntegerField(default=0)
     waiting_time = models.IntegerField(default=0)
+    difficulty = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name='难度', help_text='烹饪难度等级（1-5星）')
     internal = models.BooleanField(default=False)
     nutrition = models.ForeignKey(NutritionInformation, blank=True, null=True, on_delete=models.CASCADE)
     properties = models.ManyToManyField(Property, blank=True)

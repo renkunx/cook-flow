@@ -163,7 +163,7 @@ class TheMealDBImporter:
         food = Food.objects.create(
             space=self.space,
             name=name,
-            plural_name=name + 's' if not name.endswith('s') else name
+            plural_name=name if self.translate_language == 'zh' else (name + 's' if not name.endswith('s') else name)
         )
         return food
 

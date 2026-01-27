@@ -58,6 +58,7 @@ export interface Recipe {
   servings: number;
   working_time?: number;
   waiting_time?: number;
+  difficulty?: number | null;
   steps: Step[];
   nutrition?: Nutrition;
   created_at: string;
@@ -79,6 +80,7 @@ export interface RecipeListItem {
   servings: number;
   working_time?: number;
   waiting_time?: number;
+  difficulty?: number | null;
   rating?: number;
 }
 
