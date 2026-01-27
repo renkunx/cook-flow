@@ -106,22 +106,31 @@ class HowToCookImporter:
             # 1. 清理技巧提示
             recipe_data['tips'] = self._clean_tips(recipe_data.get('tips', []))
 
-            # 2. 准备 prompt
+            # 2. 准备 prompt - 包含所有步骤
             ingredients_summary = ', '.join([ing.get('name', '') for ing in recipe_data.get('ingredients', [])[:10]])
-            steps_summary = '\n'.join(recipe_data.get('steps', [])[:5])
+            # 发送所有步骤给 AI，不只是前5个
+            all_steps = recipe_data.get('steps', [])
+            steps_summary = '\n'.join([f"{i+1}. {s}" for i, s in enumerate(all_steps)])
 
             prompt = f"""请优化以下中文菜谱数据：
 
 菜谱名称：{recipe_data['name']}
 当前描述：{recipe_data.get('description', '无')}
 主要食材：{ingredients_summary}
-主要步骤：{steps_summary}
+
+原始步骤（共{len(all_steps)}步）：
+{steps_summary}
+
 技巧提示：{recipe_data.get('tips', [])[:3]}
 
 请返回 JSON 格式：
 {{
   "name": "优化后的菜名（简化，去除营销词）",
   "description": "约100-150字的菜品描述，包括口感特点和营养搭配",
+  "steps": [
+    "合并后的步骤1：包含多个相关操作",
+    "合并后的步骤2：包含多个相关操作"
+  ],
   "nutrition": {{
     "calories": 每份卡路里（整数）,
     "protein": 蛋白质克数（整数）,
@@ -130,10 +139,19 @@ class HowToCookImporter:
   }}
 }}
 
+步骤合并规则：
+- 将简单琐碎的步骤合并（如：切菜、准备调料等准备工作可以合并为"食材处理"）
+- 将连续的烹饪操作合并（如：先炒A再加B，可以合并为一个步骤）
+- 将同类操作合并（如：多次翻煮可以合并为"中小火煮15分钟"）
+- 保留独立的烹饪阶段（如：腌制、焯水、炒制、炖煮、收汁等）
+- 合并后将步骤控制在 5-8 个，每个步骤包含 2-4 个具体操作
+- 保持逻辑清晰，让烹饪者能流畅地完成菜品
+
 要求：
 - 如果当前描述为空或太短（少于50字），生成新的描述
 - 根据食材估算营养信息（4人份）
 - 简化菜名，去除夸张修饰词
+- 必须返回合并后的 steps 数组
 - 返回有效的 JSON，不要有其他文字
 """
 
@@ -185,6 +203,13 @@ class HowToCookImporter:
             if ai_result.get('description'):
                 print(f"        AI 生成描述: {ai_result['description'][:50]}...")
                 recipe_data['description'] = ai_result['description']
+
+            # 使用 AI 合并后的步骤
+            if ai_result.get('steps'):
+                original_steps = len(recipe_data.get('steps', []))
+                merged_steps = len(ai_result['steps'])
+                print(f"        AI 合并步骤: {original_steps} → {merged_steps}")
+                recipe_data['steps'] = ai_result['steps']
 
             if ai_result.get('nutrition'):
                 print(f"        AI 估算营养: {ai_result['nutrition']}")
@@ -249,6 +274,29 @@ class HowToCookImporter:
             desc_match = re.search(r'^([^#\n].{20,})$', content, re.MULTILINE)
             if desc_match:
                 description = desc_match.group(1).strip()
+
+            # Extract cooking time from description
+            working_time = None
+            time_patterns = [
+                r'(\d+)\s*小时',
+                r'(\d+)\s*分[钟钟]',
+                r'(\d+)\s*min',
+                r'(\d+)\s*分钟',
+                r'(\d+\.?\d*)\s*小时',
+            ]
+            for pattern in time_patterns:
+                match = re.search(pattern, description)
+                if match:
+                    time_str = match.group(1)
+                    if '小时' in match.group(0):
+                        working_time = int(float(time_str) * 60)  # Convert to minutes
+                    else:
+                        working_time = int(float(time_str))
+                    break
+
+            # Default time if not found
+            if not working_time:
+                working_time = 45  # More reasonable default (45 minutes)
 
             # Extract difficulty
             difficulty_level = 0
@@ -319,7 +367,7 @@ class HowToCookImporter:
                 'tips': tips,
                 'image': image_path,
                 'servings': 4,  # Default from the recipe
-                'working_time': 120,  # Default estimate (2 hours)
+                'working_time': working_time,  # Extracted from description or default
                 'difficulty': difficulty_level,
             }
 
