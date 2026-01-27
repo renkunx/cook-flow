@@ -2776,12 +2776,23 @@ Requirements:
         try:
             litellm.callbacks = [AiCallbackHandler(request.space, request.user, image_ai_provider, AiLog.F_IMAGE_GENERATION)]
 
+            # 构建图像生成参数
+            image_gen_params = {
+                'model': image_ai_provider.model_name,
+                'prompt': image_prompt,
+            }
+
+            # 添加 API key（如果存在）
+            resolved_api_key = _resolve_env_var(image_ai_provider.api_key)
+            if resolved_api_key:
+                image_gen_params['api_key'] = resolved_api_key
+
+            # 添加 API base（如果配置了自定义 URL）
+            if image_ai_provider.url:
+                image_gen_params['api_base'] = _resolve_env_var(image_ai_provider.url)
+
             # 调用图像生成 API
-            image_response = image_generation(
-                model=image_ai_provider.model_name,
-                prompt=image_prompt,
-                api_key=_resolve_env_var(image_ai_provider.api_key),
-            )
+            image_response = image_generation(**image_gen_params)
 
             # 获取生成的图片 URL
             if 'data' not in image_response or len(image_response['data']) == 0:
@@ -2808,6 +2819,29 @@ Requirements:
                 'image_model': image_ai_provider.model_name,
             }, status=status.HTTP_200_OK)
 
+        except BadRequestError as err:
+            # 专门处理 LiteLLM 的 BadRequestError
+            error_msg = str(err)
+            if 'NOT provided' in error_msg or 'LLM provider' in error_msg:
+                # 提供详细的配置建议
+                help_msg = _(
+                    f"Model configuration error: The model '{image_ai_provider.model_name}' may not be recognized by LiteLLM for image generation.\n\n"
+                    f"Possible solutions:\n"
+                    f"1. Ensure the model name is in the correct format (e.g., 'dall-e-3', 'stable-diffusion', 'provider/model')\n"
+                    f"2. Configure the API Base URL in your AI Provider settings if using a custom endpoint\n"
+                    f"3. Check if your provider supports image generation through LiteLLM\n\n"
+                    f"For Moonshot AI Kimi models, make sure you have configured the correct API endpoint URL."
+                )
+                return Response({
+                    'error': True,
+                    'msg': help_msg,
+                    'details': err.message,
+                }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({
+                    'error': True,
+                    'msg': f'Image generation error: {err.message}',
+                }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
                 'error': True,
