@@ -2760,8 +2760,30 @@ Requirements:
             ai_response = completion(**ai_request)
 
             response_text = ai_response.choices[0].message.content
-            prompt_data = json.loads(response_text)
+            print(f"[AI DEBUG] LLM raw response text: {response_text[:1000]}...")
+
+            # 尝试解析 JSON - 如果失败，尝试提取 JSON 代码块
+            try:
+                prompt_data = json.loads(response_text)
+            except json.JSONDecodeError:
+                # 尝试从 markdown 代码块中提取 JSON
+                import re
+                json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+                if json_match:
+                    response_text = json_match.group(1)
+                    prompt_data = json.loads(response_text)
+                else:
+                    # 尝试直接查找 JSON 对象
+                    json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text, re.DOTALL)
+                    if json_match:
+                        response_text = json_match.group(0)
+                        prompt_data = json.loads(response_text)
+                    else:
+                        raise ValueError(f"Failed to parse JSON from response: {response_text[:200]}...")
+
+            print(f"[AI DEBUG] Parsed JSON keys: {list(prompt_data.keys())}")
             image_prompt = prompt_data.get('prompt', '')
+            print(f"[AI DEBUG] Extracted image_prompt: {image_prompt[:200] if image_prompt else 'EMPTY'}...")
 
             if not image_prompt:
                 raise ValueError("Failed to generate image prompt")
@@ -2788,22 +2810,53 @@ Requirements:
                 image_gen_params['api_key'] = resolved_api_key
 
             # 添加 API base（如果配置了自定义 URL）
-            if image_ai_provider.url:
-                image_gen_params['api_base'] = _resolve_env_var(image_ai_provider.url)
+            resolved_api_base = _resolve_env_var(image_ai_provider.url) if image_ai_provider.url else None
+            print(f"[AI DEBUG] resolved_api_base: {resolved_api_base}")
+            print(f"[AI DEBUG] image_ai_provider.url (raw): {image_ai_provider.url}")
+            if resolved_api_base:
+                image_gen_params['api_base'] = resolved_api_base
 
-            # 调用图像生成 API
-            image_response = image_generation(**image_gen_params)
+            # 检测是否为 NVIDIA NIM 模型，使用专用调用方式（支持图生图）
+            is_nvidia = resolved_api_base and 'nvidia.com' in resolved_api_base.lower()
+            print(f"[AI DEBUG] Is NVIDIA NIM: {is_nvidia}")
 
-            # 获取生成的图片 URL
+            if is_nvidia:
+                # 准备原图（如果存在）进行图生图
+                original_image_base64 = None
+                if recipe.image:
+                    original_image_base64 = self._image_to_base64(recipe.image.name)
+                    print(f"[AI DEBUG] Original image base64 length: {len(original_image_base64) if original_image_base64 else 0}")
+
+                # 使用 NVIDIA NIM 专用调用方式
+                image_response = self._call_nvidia_nim_api(
+                    api_base=resolved_api_base,
+                    api_key=resolved_api_key,
+                    prompt=image_prompt,
+                    image_base64=original_image_base64,
+                )
+            else:
+                # 使用 litellm 标准图像生成
+                print(f"[AI DEBUG] Using standard litellm image_generation")
+                image_response = image_generation(**image_gen_params)
+
+            # 获取生成的图片
             if 'data' not in image_response or len(image_response['data']) == 0:
                 raise ValueError("No image generated")
 
-            generated_image_url = image_response['data'][0].get('url', '')
-            if not generated_image_url:
-                raise ValueError("No image URL in response")
+            image_data = image_response['data'][0]
 
-            # 下载生成的图片
-            downloaded_image = self._download_image(generated_image_url)
+            # 支持 base64 或 URL 两种格式
+            if 'b64_json' in image_data:
+                # 直接使用 base64 数据
+                from django.core.files.base import ContentFile
+                image_content = base64.b64decode(image_data['b64_json'])
+                downloaded_image = ContentFile(image_content, name='generated.png')
+            else:
+                # 从 URL 下载
+                generated_image_url = image_data.get('url', '')
+                if not generated_image_url:
+                    raise ValueError("No image URL in response")
+                downloaded_image = self._download_image(generated_image_url)
 
             # 保存到菜谱
             img = handle_image(request, downloaded_image, '.png')
@@ -2868,6 +2921,67 @@ Requirements:
         response = requests.get(url, timeout=30)
         response.raise_for_status()
         return File(io.BytesIO(response.content))
+
+    def _image_to_base64(self, image_path):
+        """将本地图片文件转换为 base64 编码"""
+        from django.core.files.storage import default_storage
+
+        try:
+            with default_storage.open(image_path, 'rb') as img_file:
+                return base64.b64encode(img_file.read()).decode('utf-8')
+        except Exception as e:
+            # 如果图片读取失败，返回 None（不使用原图）
+            print(f"[AI DEBUG] Failed to read original image: {e}")
+            return None
+
+    def _call_nvidia_nim_api(self, api_base, api_key, prompt, image_base64=None):
+        """直接调用 NVIDIA NIM API 进行图像生成（支持图生图）"""
+        from django.core.files.storage import default_storage
+
+        # 移除末尾的斜杠
+        api_base = api_base.rstrip('/')
+
+        headers = {
+            'Authorization': f'Bearer {api_key}',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        }
+
+        # 构建请求数据
+        data = {
+            'prompt': prompt,
+            'aspect_ratio': '1:1',  # 默认 1:1，可根据需要调整
+            'steps': 30,
+            'cfg_scale': 3.5,
+            'seed': 0,
+        }
+
+        # 如果有原图，添加 image 参数进行图生图
+        if image_base64:
+            data['image'] = f'data:image/png;base64,{image_base64}'
+
+        print(f"[AI DEBUG] Calling NVIDIA NIM API: {api_base}")
+        print(f"[AI DEBUG] Request data keys: {list(data.keys())}")
+        print(f"[AI DEBUG] Has image: {'image' in data}")
+
+        response = requests.post(api_base, headers=headers, json=data, timeout=600)
+        print(f"[AI DEBUG] Response status: {response.status_code}")
+
+        response.raise_for_status()
+
+        # NVIDIA NIM 返回格式可能不同，需要适配
+        result = response.json()
+        print(f"[AI DEBUG] Response keys: {list(result.keys())}")
+
+        # 检查返回格式并转换为 litellm 兼容格式
+        if 'image' in result:
+            # 直接返回 base64 图片数据
+            return {'data': [{'b64_json': result['image']}]}
+        elif 'url' in result:
+            # 返回图片 URL
+            return {'data': [{'url': result['url']}]}
+
+        raise ValueError(f"Unexpected response format: {result}")
 
 
 class AppImportView(APIView):

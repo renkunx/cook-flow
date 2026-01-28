@@ -1,4 +1,6 @@
 from decimal import Decimal
+import logging
+import json
 
 from django.utils import timezone
 from django.db.models import Sum
@@ -6,6 +8,8 @@ from litellm import CustomLogger
 
 from cookbook.models import AiLog
 from recipes import settings
+
+logger = logging.getLogger(__name__)
 
 
 def get_monthly_token_usage(space):
@@ -43,15 +47,26 @@ class AiCallbackHandler(CustomLogger):
         self.function = function
 
     def log_pre_api_call(self, model, messages, kwargs):
-        pass
+        """调试：打印请求详情"""
+        print(f"\n[AI DEBUG] ===== API Call Start =====")
+        print(f"[AI DEBUG] Model: {model}")
+        print(f"[AI DEBUG] Messages: {json.dumps(messages, indent=2, ensure_ascii=False)[:500]}...")
+        print(f"[AI DEBUG] Kwargs keys: {list(kwargs.keys())}")
 
     def log_post_api_call(self, kwargs, response_obj, start_time, end_time):
-        pass
+        """调试：打印响应信息"""
+        print(f"[AI DEBUG] Response received")
+        if hasattr(response_obj, '__dict__'):
+            print(f"[AI DEBUG] Response: {str(response_obj)[:500]}...")
 
     def log_success_event(self, kwargs, response_obj, start_time, end_time):
         self.create_ai_log(kwargs, response_obj, start_time, end_time)
 
     def log_failure_event(self, kwargs, response_obj, start_time, end_time):
+        """调试：打印错误信息"""
+        print(f"\n[AI DEBUG] ===== API Call FAILED =====")
+        print(f"[AI DEBUG] Error: {response_obj}")
+        print(f"[AI DEBUG] Kwargs: {kwargs}")
         self.create_ai_log(kwargs, response_obj, start_time, end_time)
 
     def create_ai_log(self, kwargs, response_obj, start_time, end_time):
