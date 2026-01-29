@@ -127,24 +127,24 @@ const ingredientsData = JSON.stringify(ingredients);
     const stepsHTML = (steps || []).map((step, index) => {
       const timeTag = step.time ? `<div style="margin-top: 10px; padding: 6px 12px; background-color: #FFF0E6; color: #FF6B35; font-size: 13px; display: inline-block; border-radius: 4px;">⏱ ${step.time} 分钟</div>` : '';
       return `
-        <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background-color: white;">
-          <tr>
-            <td style="padding: 15px; border-left: 4px solid #FF6B35;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 0; vertical-align: top; width: 30px;">
-                    <span style="display: inline-block; width: 26px; height: 26px; background-color: #FF6B35; color: white; text-align: center; line-height: 26px; border-radius: 50%; font-weight: bold; font-size: 14px;">${index + 1}</span>
-                  </td>
-                  <td style="padding: 0 0 0 12px; vertical-align: top;">
-                    ${step.name ? `<div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px;">${step.name}</div>` : ''}
-                    <div style="font-size: 15px; color: #555; line-height: 1.8; white-space: pre-wrap;">${step.instruction || ''}</div>
-                    ${timeTag}
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+        <div style="margin: 15px 0; padding: 15px; background-color: white; border-radius: 8px; border-left: 4px solid #FF6B35;">
+          <table style="width: 100%; border-collapse: collapse; border: none; table-layout: fixed;">
+            <colgroup>
+              <col style="width: 40px;">
+              <col style="width: auto;">
+            </colgroup>
+            <tr>
+              <td style="padding: 0; vertical-align: top; border: none;">
+                <span style="display: inline-block; width: 26px; height: 26px; background-color: #FF6B35; color: white; text-align: center; line-height: 26px; border-radius: 50%; font-weight: bold; font-size: 14px;">${index + 1}</span>
+              </td>
+              <td style="padding: 0 0 0 12px; vertical-align: top; border: none;">
+                ${step.name ? `<div style="font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px;">${step.name}</div>` : ''}
+                <div style="font-size: 15px; color: #555; line-height: 1.8; white-space: pre-wrap;">${step.instruction || ''}</div>
+                ${timeTag}
+              </td>
+            </tr>
+          </table>
+        </div>
       `;
     }).join('');
 

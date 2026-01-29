@@ -1,27 +1,49 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import RecipeCard from '../components/RecipeCard.astro';
-import { getRecipes } from '../utils/api';
+import { getRecipes, type RecipeListItem } from '../utils/api';
+import RecipeList from '../components/RecipeList.vue';
 
 export const prerender = false;
 
-// 获取菜谱列表
-let recipes;
+// 初始加载第一页
+let initialRecipes: RecipeListItem[] = [];
+let totalCount = 0;
 let error = null;
 
 try {
   const response = await getRecipes(1, 20);
-  recipes = response.results;
+  initialRecipes = response.results;
+  totalCount = response.count;
+  console.log('Server-side data loaded:', { initialRecipes: initialRecipes.length, totalCount });
 } catch (e) {
   error = e instanceof Error ? e.message : 'Failed to load recipes';
-  recipes = [];
+  console.error('Server-side error:', e);
 }
+
+// 获取 API 配置
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_TOKEN = import.meta.env.PUBLIC_API_TOKEN || '';
+console.log('API config:', { API_URL, hasToken: !!API_TOKEN });
 ---
+
+<script define:vars={{ initialRecipes, totalCount, API_URL, API_TOKEN }}>
+  // 将服务端数据传递给全局变量，供 Vue 组件使用
+  window.__INITIAL_DATA__ = {
+    initialRecipes: initialRecipes,
+    totalCount: totalCount,
+    apiUrl: API_URL,
+    apiToken: API_TOKEN
+  };
+  console.log('Global data set:', window.__INITIAL_DATA__);
+</script>
 
 <Layout title="私房小厨 - 美味家常菜谱">
   <div class="page-hero">
     <h1 class="page-title">家常美味</h1>
     <p class="page-subtitle">用心做好每一道菜，分享家的味道</p>
+    {totalCount > 0 && (
+      <p class="recipe-count">共 {totalCount} 道菜谱</p>
+    )}
   </div>
 
   {error ? (
@@ -34,17 +56,12 @@ try {
         <p class="error-message">{error}</p>
       </div>
     </div>
-  ) : recipes.length === 0 ? (
-    <div class="empty-state">
-      <div class="empty-icon">🍳</div>
-      <p class="empty-text">暂无菜谱</p>
-    </div>
   ) : (
-    <div class="recipe-grid">
-      {recipes.map((recipe) => (
-        <RecipeCard recipe={recipe} />
-      ))}
-    </div>
+    <RecipeList
+      client:load
+      api-url={API_URL}
+      api-token={API_TOKEN}
+    />
   )}
 </Layout>
 
@@ -68,6 +85,12 @@ try {
   .page-subtitle {
     font-size: 1rem;
     color: #666666;
+  }
+
+  .recipe-count {
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+    color: #999999;
   }
 
   .error-banner {
@@ -95,46 +118,5 @@ try {
 
   .error-message {
     font-size: 0.875rem;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 4rem 1rem;
-    background: white;
-    border-radius: 1rem;
-    border: 1px solid #FFE4D6;
-  }
-
-  .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-
-  .empty-text {
-    font-size: 1.125rem;
-    color: #666666;
-  }
-
-  .recipe-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  @media (min-width: 640px) {
-    .recipe-grid {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .recipe-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .page-title {
-      font-size: 2.5rem;
-    }
   }
 </style>
