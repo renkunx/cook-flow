@@ -28,6 +28,16 @@ if (error || !recipe) {
 
 // 提取食材列表（从步骤中收集）
 const ingredients = extractIngredients(recipe.steps);
+
+// 调试信息
+console.log('Recipe data:', recipe);
+console.log('Steps:', recipe.steps);
+console.log('Ingredients extracted:', ingredients);
+if (recipe.steps && recipe.steps.length > 0) {
+  recipe.steps.forEach((step, index) => {
+    console.log(`Step ${index + 1} ingredients:`, step.ingredients);
+  });
+}
 ---
 
 <Layout title={`${recipe.name} - 私房小厨`}>
@@ -54,6 +64,22 @@ const ingredients = extractIngredients(recipe.steps);
     </section>
   </article>
 </Layout>
+
+<script define:vars={{ recipe, ingredients }}>
+  // 客户端调试信息
+  console.log('=== Recipe Detail Debug ===');
+  console.log('Recipe:', recipe);
+  console.log('Ingredients:', ingredients);
+  console.log('Steps:', recipe.steps);
+
+  if (recipe.steps && recipe.steps.length > 0) {
+    recipe.steps.forEach((step, index) => {
+      console.log(`Step ${index + 1}:`, step);
+      console.log(`  - ingredients:`, step.ingredients);
+    });
+  }
+  console.log('========================');
+</script>
 
 <style>
   .recipe-detail {

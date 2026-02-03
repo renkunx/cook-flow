@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getRecipes, type RecipeListItem } from '../utils/api';
-import RecipeList from '../components/RecipeList.vue';
+import HomePage from '../components/HomePage.vue';
 
 export const prerender = false;
 
@@ -38,14 +38,6 @@ console.log('API config:', { API_URL, hasToken: !!API_TOKEN });
 </script>
 
 <Layout title="私房小厨 - 美味家常菜谱">
-  <div class="page-hero">
-    <h1 class="page-title">家常美味</h1>
-    <p class="page-subtitle">用心做好每一道菜，分享家的味道</p>
-    {totalCount > 0 && (
-      <p class="recipe-count">共 {totalCount} 道菜谱</p>
-    )}
-  </div>
-
   {error ? (
     <div class="error-banner">
       <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,42 +49,15 @@ console.log('API config:', { API_URL, hasToken: !!API_TOKEN });
       </div>
     </div>
   ) : (
-    <RecipeList
+    <HomePage
       client:load
-      api-url={API_URL}
-      api-token={API_TOKEN}
+      :api-url={API_URL}
+      :api-token={API_TOKEN}
     />
   )}
 </Layout>
 
 <style>
-  .page-hero {
-    text-align: center;
-    margin-bottom: 2.5rem;
-    padding: 2rem 1rem;
-    background: linear-gradient(135deg, #FFF0E6 0%, #FFF8F3 100%);
-    border-radius: 1rem;
-    border: 1px solid #FFE4D6;
-  }
-
-  .page-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #FF6B35;
-    margin-bottom: 0.5rem;
-  }
-
-  .page-subtitle {
-    font-size: 1rem;
-    color: #666666;
-  }
-
-  .recipe-count {
-    margin-top: 0.75rem;
-    font-size: 0.875rem;
-    color: #999999;
-  }
-
   .error-banner {
     display: flex;
     align-items: flex-start;

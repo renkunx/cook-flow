@@ -14,14 +14,15 @@ function getHeaders(): HeadersInit {
 }
 
 // API 响应类型定义
-export interface Food {
+export interface Unit {
   id: number;
   name: string;
 }
 
-export interface Unit {
+export interface Food {
   id: number;
   name: string;
+  description?: string;
 }
 
 export interface Ingredient {
@@ -82,6 +83,31 @@ export interface RecipeListItem {
   waiting_time?: number;
   difficulty?: number | null;
   rating?: number;
+  keywords?: Keyword[];
+}
+
+export interface Keyword {
+  id: number;
+  name: string;
+  label?: string;
+  description?: string;
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+// 搜索参数接口
+export interface SearchParams {
+  query?: string;
+  keywords?: string[];
+  foods?: string[];
+  sort_order?: string;
+  page?: number;
+  page_size?: number;
 }
 
 // 获取菜谱列表
@@ -127,4 +153,58 @@ export function formatTime(minutes?: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return mins > 0 ? `${hours}小时${mins}分钟` : `${hours}小时`;
+}
+
+// ========== 搜索相关 API ==========
+
+// 搜索菜谱
+export async function searchRecipes(params: SearchParams): Promise<RecipeListResponse> {
+  const queryParams = new URLSearchParams();
+
+  // 构建查询参数
+  if (params.query) queryParams.append('query', params.query);
+  if (params.keywords?.length) {
+    params.keywords.forEach(k => queryParams.append('keywords_or', k));
+  }
+  if (params.foods?.length) {
+    params.foods.forEach(f => queryParams.append('foods_or', f));
+  }
+  if (params.sort_order) queryParams.append('sort_order', params.sort_order);
+  queryParams.append('page', String(params.page || 1));
+  queryParams.append('page_size', String(params.page_size || 20));
+
+  const url = `${API_BASE_URL}/api/recipe/?${queryParams.toString()}`;
+  console.log('Search URL:', url);
+
+  const response = await fetch(url, { headers: getHeaders() });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Search failed:', response.status, errorText);
+    throw new Error(`搜索失败: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// 获取标签列表
+export async function getKeywords(page = 1, pageSize = 100): Promise<PaginatedResponse<Keyword>> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/keyword/?page=${page}&page_size=${pageSize}`,
+    { headers: getHeaders() }
+  );
+
+  if (!response.ok) throw new Error('Failed to fetch keywords');
+  return response.json();
+}
+
+// 获取食材列表
+export async function getFoods(page = 1, pageSize = 100): Promise<PaginatedResponse<Food>> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/food/?page=${page}&page_size=${pageSize}`,
+    { headers: getHeaders() }
+  );
+
+  if (!response.ok) throw new Error('Failed to fetch foods');
+  return response.json();
 }
