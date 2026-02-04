@@ -1,0 +1,10 @@
+---
+import FreshPlateLayout from '../layouts/FreshPlateLayout.astro';
+import HomePage from '../components/freshplate/HomePage.vue';
+
+export const prerender = false;
+---
+
+<FreshPlateLayout title="FreshPlate - AI 智能菜谱推荐">
+  <HomePage client:load />
+</FreshPlateLayout>

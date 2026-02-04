@@ -1,100 +1,59 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import RecipeHeader from '../../components/RecipeHeader.astro';
-import IngredientList from '../../components/IngredientList.astro';
-import StepList from '../../components/StepList.astro';
-import NutritionInfo from '../../components/NutritionInfo.astro';
-import CopyButton from '../../components/CopyButton.astro';
-import { getRecipe, extractIngredients } from '../../utils/api';
+import FreshPlateLayout from '../../layouts/FreshPlateLayout.astro';
+import { getRecipe, extractIngredients, formatTime } from '../../utils/api';
+import RecipeDetailPage from '../../components/RecipeDetailPage.vue';
 
 export const prerender = false;
 
+// 获取菜谱 ID
 const { id } = Astro.params;
 
-// 获取菜谱数据
-let recipe;
+let recipe = null;
 let error = null;
+let notFound = false;
 
 try {
-  recipe = await getRecipe(id!);
+  const numericId = parseInt(id, 10);
+  if (isNaN(numericId)) {
+    notFound = true;
+  } else {
+    recipe = await getRecipe(id);
+    console.log('Recipe loaded:', recipe?.name);
+  }
 } catch (e) {
-  error = e instanceof Error ? e.message : 'Failed to fetch recipe';
+  error = e instanceof Error ? e.message : 'Failed to load recipe';
+  console.error('Recipe loading error:', e);
+  notFound = true;
 }
 
-// 处理错误情况
-if (error || !recipe) {
-  return Astro.redirect('/?error=' + encodeURIComponent(error || 'Recipe not found'));
+// 404 页面
+if (notFound || !recipe) {
+  return Astro.redirect('/404');
 }
 
-// 提取食材列表（从步骤中收集）
-const ingredients = extractIngredients(recipe.steps);
+// 获取 API 配置
+const API_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000';
+const API_TOKEN = import.meta.env.PUBLIC_API_TOKEN || '';
 
-// 调试信息
-console.log('Recipe data:', recipe);
-console.log('Steps:', recipe.steps);
-console.log('Ingredients extracted:', ingredients);
-if (recipe.steps && recipe.steps.length > 0) {
-  recipe.steps.forEach((step, index) => {
-    console.log(`Step ${index + 1} ingredients:`, step.ingredients);
-  });
-}
+// 从步骤中提取食材
+const ingredients = extractIngredients(recipe.steps || []);
+
+// 获取相关菜谱（这里简化处理，实际可以调用 API 获取相关推荐）
 ---
 
-<Layout title={`${recipe.name} - 私房小厨`}>
-  <article class="recipe-detail">
-    <!-- 复制按钮 -->
-    <CopyButton recipe={recipe} ingredients={ingredients} />
-
-    <!-- 菜品头部 -->
-    <RecipeHeader recipe={recipe} />
-
-    <!-- 营养信息 -->
-    {(recipe.nutrition || recipe.properties) && (
-      <NutritionInfo nutrition={recipe.nutrition} properties={recipe.properties} />
-    )}
-
-    <!-- 食材列表 -->
-    <section class="recipe-section">
-      <IngredientList ingredients={ingredients} servings={recipe.servings} />
-    </section>
-
-    <!-- 制作步骤 -->
-    <section class="recipe-section">
-      <StepList steps={recipe.steps} />
-    </section>
-  </article>
-</Layout>
-
-<script define:vars={{ recipe, ingredients }}>
-  // 客户端调试信息
-  console.log('=== Recipe Detail Debug ===');
-  console.log('Recipe:', recipe);
-  console.log('Ingredients:', ingredients);
-  console.log('Steps:', recipe.steps);
-
-  if (recipe.steps && recipe.steps.length > 0) {
-    recipe.steps.forEach((step, index) => {
-      console.log(`Step ${index + 1}:`, step);
-      console.log(`  - ingredients:`, step.ingredients);
-    });
-  }
-  console.log('========================');
+<script define:vars={{ recipe, ingredients, API_URL, API_TOKEN }}>
+  window.__RECIPE_DATA__ = {
+    recipe,
+    ingredients,
+    apiUrl: API_URL,
+    apiToken: API_TOKEN
+  };
 </script>
 
-<style>
-  .recipe-detail {
-    max-width: 48rem;
-    margin: 0 auto;
-    padding-bottom: 6rem;
-  }
-
-  .recipe-section {
-    margin-top: 1.5rem;
-  }
-
-  @media (min-width: 768px) {
-    .recipe-section {
-      margin-top: 2rem;
-    }
-  }
-</style>
+<FreshPlateLayout title={`${recipe.name} - 私房小厨`}>
+  <RecipeDetailPage
+    client:load
+    :recipe="recipe"
+    :ingredients="ingredients"
+  />
+</FreshPlateLayout>
