@@ -1,0 +1,258 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 温暖厨房主题色 - 从logo提取 */
+    --background: 42 60% 97%;
+    --foreground: 20 30% 18%;
+    --card: 42 50% 98%;
+    --card-foreground: 20 30% 18%;
+    --popover: 42 50% 98%;
+    --popover-foreground: 20 30% 18%;
+    --primary: 28 75% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 100 35% 92%;
+    --secondary-foreground: 120 35% 25%;
+    --muted: 42 30% 94%;
+    --muted-foreground: 20 15% 45%;
+    --accent: 100 45% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 35 25% 88%;
+    --input: 35 25% 88%;
+    --ring: 28 75% 52%;
+    --radius: 1rem;
+    
+    /* Custom Colors - 温暖厨房主题 */
+    --warm-cream: #FFF8E7;
+    --warm-beige: #FDF5E6;
+    --warm-orange: #E8913A;
+    --warm-orange-light: #F5A623;
+    --warm-orange-dark: #D4802A;
+    --fresh-green: #5A9A4F;
+    --fresh-green-light: #7CB342;
+    --fresh-green-dark: #3D7A35;
+    --tomato-red: #E85D4C;
+    --carrot-orange: #F09340;
+    --herb-green: #4CAF50;
+    --text-brown: #4A3728;
+    --text-brown-light: #6B5344;
+    --text-brown-dark: #2D1F16;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-[var(--warm-cream)] text-[var(--text-brown)] antialiased;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fraunces', 'Noto Sans SC', serif;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-xl bg-white/85;
+  }
+  
+  .gradient-warm {
+    background: linear-gradient(135deg, var(--warm-orange) 0%, var(--warm-orange-light) 100%);
+  }
+  
+  .gradient-cream {
+    background: linear-gradient(180deg, var(--warm-cream) 0%, var(--warm-beige) 100%);
+  }
+  
+  .text-gradient-orange {
+    background: linear-gradient(135deg, var(--warm-orange) 0%, var(--tomato-red) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .text-gradient-green {
+    background: linear-gradient(135deg, var(--fresh-green) 0%, var(--herb-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .shadow-warm {
+    box-shadow: 0 4px 20px rgba(232, 145, 58, 0.15);
+  }
+  
+  .shadow-warm-lg {
+    box-shadow: 0 8px 32px rgba(232, 145, 58, 0.2);
+  }
+  
+  .btn-primary {
+    @apply bg-[var(--warm-orange)] hover:bg-[var(--warm-orange-dark)] text-white rounded-full transition-all duration-300;
+  }
+  
+  .btn-secondary {
+    @apply bg-[var(--fresh-green)] hover:bg-[var(--fresh-green-dark)] text-white rounded-full transition-all duration-300;
+  }
+  
+  .card-warm {
+    @apply bg-white rounded-2xl shadow-warm hover:shadow-warm-lg transition-all duration-300;
+  }
+  
+  .badge-orange {
+    @apply bg-[var(--warm-orange)]/10 text-[var(--warm-orange-dark)] px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .badge-green {
+    @apply bg-[var(--fresh-green)]/10 text-[var(--fresh-green-dark)] px-3 py-1 rounded-full text-sm font-medium;
+  }
+}
+
+/* Custom Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(1deg);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes steam {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(1.2);
+  }
+}
+
+@keyframes pulse-warm {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(232, 145, 58, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(232, 145, 58, 0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.animate-steam {
+  animation: steam 3s ease-out infinite;
+}
+
+.animate-pulse-warm {
+  animation: pulse-warm 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--warm-beige);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--warm-orange);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--warm-orange-dark);
+}
+
+/* Selection */
+::selection {
+  background: rgba(232, 145, 58, 0.25);
+  color: var(--text-brown-dark);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--warm-orange);
+  outline-offset: 2px;
+}
