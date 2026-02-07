@@ -1,4 +1,5 @@
-// App component with multi-tab sync
+// App component with multi-tab sync and PWA support
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Navigation } from './sections/Navigation';
 import { Hero } from './sections/Hero';
@@ -10,9 +11,18 @@ import { Footer } from './sections/Footer';
 import { RecipeDetail } from './pages/RecipeDetail';
 import { Schedule } from './pages/Schedule';
 import { ShoppingList } from './pages/ShoppingList';
+import { PWASettings } from './pages/PWASettings';
 import { useSyncStorage } from './hooks/useSyncStorage';
 import type { Ingredient, CookingSchedule, ShoppingItem } from './types';
 import './App.css';
+
+// PWA Components
+import { 
+  InstallPrompt, 
+  NetworkStatus, 
+  UpdatePrompt,
+  registerSW 
+} from '@/components/pwa';
 
 // Home Page Component
 function HomePage({
@@ -87,6 +97,15 @@ function AppContent() {
 
   return (
     <>
+      {/* PWA Network Status */}
+      <NetworkStatus />
+      
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
+      
+      {/* PWA Update Prompt */}
+      <UpdatePrompt />
+
       {/* Global Navigation - Visible on all pages */}
       <Navigation 
         scheduleCount={schedules.length} 
@@ -136,12 +155,28 @@ function AppContent() {
             />
           }
         />
+        <Route
+          path="/settings"
+          element={<PWASettings />}
+        />
       </Routes>
     </>
   );
 }
 
 function App() {
+  // 注册 Service Worker
+  useEffect(() => {
+    registerSW({
+      onOfflineReady: () => {
+        console.log('应用已准备好离线使用');
+      },
+      onUpdate: () => {
+        console.log('新版本可用');
+      },
+    });
+  }, []);
+
   return (
     <BrowserRouter>
       <AppContent />
