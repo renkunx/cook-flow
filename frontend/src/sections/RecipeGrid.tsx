@@ -1,31 +1,99 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Flame, ChefHat, Users, ArrowRight } from 'lucide-react';
+import { Clock, Flame, ChefHat, Users, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { recipes } from '@/data/recipes';
+import { recipeApi } from '@/api/recipe';
 import type { Ingredient } from '@/types';
 import { Badge } from '@/components/ui/badge';
+
+// Local type definition to avoid import issues
+interface RecipeOverview {
+  id: number;
+  name: string;
+  description: string;
+  image: string | null;
+  servings: number;
+  working_time: number;
+  waiting_time: number;
+  keywords: Keyword[];
+  nutrition?: {
+    calories: number;
+  } | null;
+}
+
+interface Keyword {
+  id: number;
+  name: string;
+  label?: string;
+}
 
 interface RecipeGridProps {
   selectedIngredients: Ingredient[];
 }
 
 export function RecipeGrid({ selectedIngredients }: RecipeGridProps) {
-  // Calculate recipe matches based on selected ingredients
+  const [apiRecipes, setApiRecipes] = useState<RecipeOverview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch recipes from API
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await recipeApi.list({ page: 1, page_size: 50 });
+        setApiRecipes(response.results);
+      } catch (err) {
+        console.error('Failed to fetch recipes:', err);
+        setError('加载菜谱失败，请稍后重试');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipes();
+  }, []);
+
+  // Convert API recipes to UI recipe format and calculate matches
   const matchedRecipes = useMemo(() => {
+    const convertToUiRecipe = (apiRecipe: RecipeOverview) => ({
+      id: String(apiRecipe.id),
+      title: apiRecipe.name,
+      description: apiRecipe.description || '',
+      image: apiRecipe.image || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&auto=format&fit=crop',
+      cookTime: apiRecipe.working_time || 30,
+      calories: apiRecipe.nutrition?.calories || 200,
+      difficulty: (apiRecipe.working_time || 30) < 20 ? 'easy' : (apiRecipe.working_time || 30) < 45 ? 'medium' : 'hard' as 'easy' | 'medium' | 'hard',
+      ingredients: [], // Will be populated from detailed API call if needed
+      instructions: [],
+      tags: apiRecipe.keywords
+        ?.map((k) => k.name || k.label || '')
+        .filter(Boolean) || [],
+    });
+
+    const uiRecipes = apiRecipes.map(convertToUiRecipe);
+
     if (selectedIngredients.length === 0) {
-      return recipes.map((r) => ({ ...r, matchCount: 0, matchPercentage: 0 }));
+      return uiRecipes.map((r) => ({ ...r, matchCount: 0, matchPercentage: 0 }));
     }
 
     const selectedNames = selectedIngredients.map((i) => i.name.toLowerCase());
 
-    return recipes
+    return uiRecipes
       .map((recipe) => {
-        const matched = recipe.ingredients.filter((ing) =>
-          selectedNames.some((name) => ing.toLowerCase().includes(name) || name.includes(ing.toLowerCase()))
+        // Match based on recipe name, description, and tags
+        const searchContent = [
+          recipe.title.toLowerCase(),
+          recipe.description.toLowerCase(),
+          ...recipe.tags.map((t: string) => t?.toLowerCase() || ''),
+        ].join(' ');
+
+        const matched = selectedNames.filter((name) =>
+          searchContent.includes(name) || name.includes(searchContent.split(' ').find((w: string) => w.length > 2) || '')
         );
         const matchCount = matched.length;
-        const matchPercentage = Math.round((matchCount / recipe.ingredients.length) * 100);
+        const matchPercentage = selectedNames.length > 0 ? Math.round((matchCount / selectedNames.length) * 100) : 0;
         return { ...recipe, matchCount, matchPercentage };
       })
       .sort((a, b) => {
@@ -35,7 +103,7 @@ export function RecipeGrid({ selectedIngredients }: RecipeGridProps) {
         }
         return b.matchCount - a.matchCount;
       });
-  }, [selectedIngredients]);
+  }, [apiRecipes, selectedIngredients]);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -88,10 +156,25 @@ export function RecipeGrid({ selectedIngredients }: RecipeGridProps) {
           </p>
         </motion.div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 text-[var(--warm-orange)] animate-spin" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-20">
+            <p className="text-[var(--tomato-red)]">{error}</p>
+          </div>
+        )}
+
         {/* Recipe Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence mode="popLayout">
-            {matchedRecipes.map((recipe, index) => (
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence mode="popLayout">
+              {matchedRecipes.map((recipe, index) => (
               <motion.div
                 key={recipe.id}
                 layout
@@ -157,9 +240,12 @@ export function RecipeGrid({ selectedIngredients }: RecipeGridProps) {
 
                       {/* Tags */}
                       <div className="flex flex-wrap gap-1.5 mb-4">
-                        {recipe.tags.slice(0, 3).map((tag) => (
+                        {recipe.tags
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .map((tag, tagIndex) => (
                           <span
-                            key={tag}
+                            key={`${tag}-${tagIndex}`}
                             className="text-xs px-2 py-1 bg-[var(--warm-cream)] text-[var(--text-brown-light)] rounded-full"
                           >
                             {tag}
@@ -191,9 +277,10 @@ export function RecipeGrid({ selectedIngredients }: RecipeGridProps) {
                   </div>
                 </Link>
               </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
     </section>
   );

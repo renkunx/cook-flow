@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>西红柿炒蛋 - 小厨有谱</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    /* ========== 复制按钮工具栏 ========== */
+    .toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 12px 16px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .toolbar-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toolbar-btns {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #FF6B35, #F7931E);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255,107,53,0.4);
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8e8;
+    }
+
+    /* ========== 提示信息 ========== */
+    .toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-size: 14px;
+      z-index: 1001;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      background: linear-gradient(135deg, #52C41A, #73D13D);
+    }
+
+    .toast.error {
+      background: linear-gradient(135deg, #FF4D4F, #FF7875);
+    }
+
+    /* ========== 主要内容容器 ========== */
+    .container {
+      max-width: 800px;
+      margin: 70px auto 0;
+      background: #fff;
+      min-height: calc(100vh - 70px);
+    }
+
+    /* ========== 编辑区域标识 ========== */
+    .editor-area {
+      border: 2px dashed transparent;
+      transition: border-color 0.3s;
+    }
+
+    .editor-area:hover {
+      border-color: #FF6B35;
+    }
+
+    /* ========== 以下样式会被复制到微信 ========== */
+    
+    /* 首图区域 */
+    .recipe-header {
+      position: relative;
+      width: 100%;
+    }
+
+    .recipe-cover {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .recipe-title-wrap {
+      padding: 20px;
+      background: linear-gradient(to bottom, #fff, #FFF8F0);
+      text-align: center;
+    }
+
+    .recipe-main-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .recipe-sub-title {
+      font-size: 15px;
+      color: #FF6B35;
+    }
+
+    /* 内容区域 */
+    .recipe-content {
+      padding: 0 16px 24px;
+    }
+
+    /* 营养信息 - 使用 table 布局兼容微信 */
+    .nutrition-section {
+      background: linear-gradient(135deg, #FFF8F0 0%, #FFEFE3 100%);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      border: 1px solid #FFE4D1;
+    }
+
+    .section-header {
+      font-size: 16px;
+      font-weight: 600;
+      color: #FF6B35;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .nutrition-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 8px;
+    }
+
+    .nutrition-cell {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px 8px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(255,107,53,0.08);
+    }
+
+    .nutrition-num {
+      font-size: 26px;
+      font-weight: bold;
+      color: #FF6B35;
+      line-height: 1.2;
+    }
+
+    .nutrition-unit {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .nutrition-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* 信息栏 */
+    .info-section {
+      background: #FAFAFA;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .info-cell {
+      text-align: center;
+      padding: 8px;
+    }
+
+    .info-icon-wrap {
+      width: 48px;
+      height: 48px;
+      background: #FFF5F0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .info-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .info-desc {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .difficulty-easy { color: #52C41A; }
+    .difficulty-medium { color: #FAAD14; }
+    .difficulty-hard { color: #FF4D4F; }
+
+    /* 分隔线 */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: #f0f0f0;
+      margin: 8px 0;
+    }
+
+    /* 小标题 */
+    .subsection-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin: 24px 0 16px;
+      padding-left: 12px;
+      border-left: 4px solid #FF6B35;
+    }
+
+    /* 材料列表 - 使用 table */
+    .ingredients-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 8px;
+    }
+
+    .ingredient-row {
+      background: #FAFAFA;
+      border-radius: 12px;
+    }
+
+    .ingredient-cell {
+      padding: 12px;
+      vertical-align: middle;
+    }
+
+    .ingredient-icon {
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .ingredient-name {
+      font-weight: 500;
+      color: #333;
+      font-size: 15px;
+    }
+
+    .ingredient-amount {
+      font-size: 13px;
+      color: #999;
+    }
+
+    /* 步骤 */
+    .step-item {
+      margin-bottom: 24px;
+      background: #fff;
+    }
+
+    .step-header {
+      margin-bottom: 12px;
+    }
+    
+    .step-header table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .step-header td {
+      vertical-align: top;
+    }
+    
+    .step-header td:first-child {
+      width: 44px;
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #FF6B35, #F7931E);
+      color: #fff;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      padding-top: 4px;
+    }
+
+    .step-content {
+      padding-left: 44px;
+    }
+
+    .step-text {
+      color: #333;
+      font-size: 15px;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+
+    .step-img {
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      margin: 12px 0;
+      display: block;
+    }
+
+    .step-tip {
+      background: #FFF8F0;
+      border-left: 3px solid #FF6B35;
+      padding: 10px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    /* 完成区域 */
+    .finish-section {
+      background: linear-gradient(135deg, #FF6B35, #F7931E);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      color: #fff;
+      margin-top: 32px;
+    }
+
+    .finish-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .finish-title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .finish-text {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    /* 底部 */
+    .footer-section {
+      padding: 32px 24px;
+      text-align: center;
+      background: #FAFAFA;
+    }
+
+    .brand-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #FF6B35, #F7931E);
+      border-radius: 50%;
+      margin: 0 auto 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 24px;
+    }
+
+    .brand-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .brand-slogan {
+      font-size: 13px;
+      color: #999;
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 480px) {
+      .toolbar {
+        padding: 10px 12px;
+      }
+      
+      .toolbar-title {
+        font-size: 14px;
+      }
+      
+      .btn {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+      
+      .recipe-main-title {
+        font-size: 24px;
+      }
+      
+      .nutrition-num {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ========== 顶部工具栏 ========== -->
+  <div class="toolbar">
+    <div class="toolbar-title">🍳 小厨有谱 · 公众号图文工具</div>
+    <div class="toolbar-btns">
+      <button class="btn btn-secondary" onclick="previewMode()">
+        <span>👁️</span> 预览
+      </button>
+      <button class="btn btn-primary" onclick="copyToWechat()">
+        <span>📋</span> 一键复制
+      </button>
+    </div>
+  </div>
+
+  <!-- ========== 提示信息 ========== -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ========== 主要内容（将被复制） ========== -->
+  <div class="container">
+    <div class="editor-area" id="editor-content">
+      
+      <!-- 首图 -->
+      <div class="recipe-header">
+        <img 
+          src="https://images.unsplash.com/photo-1525351326368-efbb5cb6814d?w=800&auto=format&fit=crop" 
+          alt="西红柿炒蛋"
+          class="recipe-cover"
+        >
+        <div class="recipe-title-wrap">
+          <div class="recipe-main-title">西红柿炒蛋</div>
+          <div class="recipe-sub-title">经典家常菜 · 酸甜可口 · 营养丰富</div>
+        </div>
+      </div>
+
+      <div class="recipe-content">
+        <!-- 营养信息 -->
+        <div class="nutrition-section">
+          <div class="section-header">📊 营养价值 (每份)</div>
+          <table class="nutrition-table">
+            <tr>
+              <td style="width: 33.33%;">
+                <div class="nutrition-cell">
+                  <div class="nutrition-num">128</div>
+                  <div class="nutrition-unit">kcal</div>
+                  <div class="nutrition-label">热量</div>
+                </div>
+              </td>
+              <td style="width: 33.33%;">
+                <div class="nutrition-cell">
+                  <div class="nutrition-num">536</div>
+                  <div class="nutrition-unit">kJ</div>
+                  <div class="nutrition-label">卡路里</div>
+                </div>
+              </td>
+              <td style="width: 33.33%;">
+                <div class="nutrition-cell">
+                  <div class="nutrition-num">8.5</div>
+                  <div class="nutrition-unit">g</div>
+                  <div class="nutrition-label">脂肪</div>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="info-section">
+          <table class="info-table">
+            <tr>
+              <td class="info-cell" style="width: 33.33%;">
+                <div class="info-icon-wrap">⏱️</div>
+                <div class="info-text">15分钟</div>
+                <div class="info-desc">操作时长</div>
+              </td>
+              <td class="info-cell" style="width: 33.33%;">
+                <div class="info-icon-wrap">📊</div>
+                <div class="info-text difficulty-easy">简单</div>
+                <div class="info-desc">难度等级</div>
+              </td>
+              <td class="info-cell" style="width: 33.33%;">
+                <div class="info-icon-wrap">🍽️</div>
+                <div class="info-text">2人份</div>
+                <div class="info-desc">适合人数</div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- 所需材料 -->
+        <div class="subsection-title">🥬 所需材料</div>
+        <table class="ingredients-table">
+          <tr>
+            <td style="width: 50%;">
+              <table class="ingredient-row" style="width: 100%;">
+                <tr>
+                  <td class="ingredient-cell" style="width: 50px;">
+                    <span class="ingredient-icon">🍅</span>
+                  </td>
+                  <td class="ingredient-cell">
+                    <div class="ingredient-name">西红柿</div>
+                    <div class="ingredient-amount">2个 (约300g)</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td style="width: 50%;">
+              <table class="ingredient-row" style="width: 100%;">
+                <tr>
+                  <td class="ingredient-cell" style="width: 50px;">
+                    <span class="ingredient-icon">🥚</span>
+                  </td>
+                  <td class="ingredient-cell">
+                    <div class="ingredient-name">鸡蛋</div>
+                    <div class="ingredient-amount">3个</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%;">
+              <table class="ingredient-row" style="width: 100%;">
+                <tr>
+                  <td class="ingredient-cell" style="width: 50px;">
+                    <span class="ingredient-icon">🧂</span>
+                  </td>
+                  <td class="ingredient-cell">
+                    <div class="ingredient-name">食盐</div>
+                    <div class="ingredient-amount">适量 (约3g)</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td style="width: 50%;">
+              <table class="ingredient-row" style="width: 100%;">
+                <tr>
+                  <td class="ingredient-cell" style="width: 50px;">
+                    <span class="ingredient-icon">🍬</span>
+                  </td>
+                  <td class="ingredient-cell">
+                    <div class="ingredient-name">白糖</div>
+                    <div class="ingredient-amount">1茶匙 (约5g)</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="width: 50%;">
+              <table class="ingredient-row" style="width: 100%;">
+                <tr>
+                  <td class="ingredient-cell" style="width: 50px;">
+                    <span class="ingredient-icon">🌿</span>
+                  </td>
+                  <td class="ingredient-cell">
+                    <div class="ingredient-name">葱花</div>
+                    <div class="ingredient-amount">适量</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+            <td style="width: 50%;">
+              <table class="ingredient-row" style="width: 100%;">
+                <tr>
+                  <td class="ingredient-cell" style="width: 50px;">
+                    <span class="ingredient-icon">🛢️</span>
+                  </td>
+                  <td class="ingredient-cell">
+                    <div class="ingredient-name">食用油</div>
+                    <div class="ingredient-amount">2汤匙 (约30ml)</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+
+        <!-- 操作步骤 -->
+        <div class="subsection-title">👨‍🍳 操作步骤</div>
+
+        <div class="step-item">
+          <table style="width:100%;border-collapse:collapse"><tr>
+            <td style="width:44px;vertical-align:top"><span class="step-num">1</span></td>
+            <td style="vertical-align:top"><span class="step-title">处理西红柿</span></td>
+          </tr></table>
+          <div class="step-content">
+            <p class="step-text">西红柿洗净，在顶部划十字刀，放入开水中烫约30秒，取出后撕去外皮，切成小块备用。</p>
+            <div class="step-tip">💡 烫一下更容易去皮，口感会更细腻</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <table style="width:100%;border-collapse:collapse"><tr>
+            <td style="width:44px;vertical-align:top"><span class="step-num">2</span></td>
+            <td style="vertical-align:top"><span class="step-title">准备蛋液</span></td>
+          </tr></table>
+          <div class="step-content">
+            <p class="step-text">鸡蛋打入碗中，加入少许盐，用筷子充分搅打均匀至起泡。</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <table style="width:100%;border-collapse:collapse"><tr>
+            <td style="width:44px;vertical-align:top"><span class="step-num">3</span></td>
+            <td style="vertical-align:top"><span class="step-title">炒鸡蛋</span></td>
+          </tr></table>
+          <div class="step-content">
+            <p class="step-text">热锅凉油，倒入蛋液，待蛋液底部凝固后用筷子轻轻划散，炒至金黄色盛出备用。</p>
+            <img src="https://images.unsplash.com/photo-1510693206972-df098062cb71?w=600&auto=format&fit=crop" alt="炒鸡蛋" class="step-img">
+            <div class="step-tip">💡 油温不要太高，中小火炒出的鸡蛋更嫩滑</div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <table style="width:100%;border-collapse:collapse"><tr>
+            <td style="width:44px;vertical-align:top"><span class="step-num">4</span></td>
+            <td style="vertical-align:top"><span class="step-title">炒西红柿</span></td>
+          </tr></table>
+          <div class="step-content">
+            <p class="step-text">锅中再加少许油，放入西红柿块，中火翻炒至出汁变软，加入白糖提鲜。</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <table style="width:100%;border-collapse:collapse"><tr>
+            <td style="width:44px;vertical-align:top"><span class="step-num">5</span></td>
+            <td style="vertical-align:top"><span class="step-title">合炒出锅</span></td>
+          </tr></table>
+          <div class="step-content">
+            <p class="step-text">倒入炒好的鸡蛋，翻炒均匀，让鸡蛋裹上西红柿汁，调入适量盐，撒上葱花即可。</p>
+            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop" alt="成品" class="step-img">
+          </div>
+        </div>
+
+        <!-- 完成 -->
+        <div class="finish-section">
+          <div class="finish-icon">🎉</div>
+          <div class="finish-title">大功告成！</div>
+          <div class="finish-text">配上一碗热腾腾的米饭，开启美好的用餐时光吧～</div>
+        </div>
+
+        <!-- 底部 -->
+        <div class="footer-section">
+          <div class="brand-icon">🍳</div>
+          <div class="brand-name">小厨有谱</div>
+          <div class="brand-slogan">让烹饪变得简单有趣</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== JavaScript 功能 ========== -->
+  <script>
+    /**
+     * 显示提示信息
+     */
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    /**
+     * 预览模式 - 隐藏工具栏查看效果
+     */
+    function previewMode() {
+      const toolbar = document.querySelector('.toolbar');
+      const container = document.querySelector('.container');
+      
+      if (toolbar.style.display === 'none') {
+        toolbar.style.display = 'flex';
+        container.style.marginTop = '70px';
+        showToast('退出预览模式');
+      } else {
+        toolbar.style.display = 'none';
+        container.style.marginTop = '0';
+        showToast('进入预览模式，点击页面任意处退出');
+        
+        // 点击退出预览
+        document.addEventListener('click', function exitPreview(e) {
+          toolbar.style.display = 'flex';
+          container.style.marginTop = '70px';
+          document.removeEventListener('click', exitPreview);
+        }, { once: true });
+      }
+    }
+
+    /**
+     * 样式映射表 - 关键样式转为内联（微信编辑器兼容版本）
+     * 注意：
+     * 1. 每个样式字符串末尾不要加分号，避免重复
+     * 2. 避免使用 margin（微信会过滤），用 padding 或 <br> 代替
+     * 3. 避免使用 display:flex（微信不支持），用 table 布局代替
+     */
+    const STYLE_MAP = {
+      // 首图
+      'recipe-header': 'position:relative;width:100%',
+      'recipe-cover': 'width:100%;height:auto;display:block',
+      'recipe-title-wrap': 'padding:20px;background:linear-gradient(to bottom,#fff,#FFF8F0);text-align:center',
+      // 用 padding-bottom 代替 margin-bottom
+      'recipe-main-title': 'font-size:28px;font-weight:bold;color:#333;padding-bottom:8px',
+      'recipe-sub-title': 'font-size:15px;color:#FF6B35',
+      
+      // 内容区域
+      'recipe-content': 'padding:0 16px 24px',
+      
+      // 营养信息 - 用空的 <div> 或 padding 代替 margin-bottom
+      'nutrition-section': 'background:linear-gradient(135deg,#FFF8F0 0%,#FFEFE3 100%);border-radius:16px;padding:20px;padding-bottom:20px;border:1px solid #FFE4D1',
+      'section-header': 'font-size:16px;font-weight:600;color:#FF6B35;padding-bottom:16px;text-align:center',
+      'nutrition-table': 'width:100%;border-collapse:separate;border-spacing:8px',
+      'nutrition-cell': 'background:#fff;border-radius:12px;padding:16px 8px;text-align:center;box-shadow:0 2px 8px rgba(255,107,53,0.08)',
+      'nutrition-num': 'font-size:26px;font-weight:bold;color:#FF6B35;line-height:1.2',
+      'nutrition-unit': 'font-size:12px;color:#999',
+      'nutrition-label': 'font-size:14px;color:#666;padding-top:4px',
+      
+      // 基本信息
+      'info-section': 'background:#FAFAFA;border-radius:12px;padding:16px;padding-bottom:16px;border:1px solid #FFE4D1',
+      'info-table': 'width:100%;border-collapse:collapse',
+      'info-cell': 'text-align:center;padding:8px;vertical-align:middle',
+      // 用 display:inline-block 代替 inline-flex
+      'info-icon-wrap': 'width:48px;height:48px;background:#FFF5F0;border-radius:50%;display:inline-block;line-height:48px;font-size:24px;padding-bottom:8px',
+      'info-text': 'font-size:15px;font-weight:600;color:#333',
+      'info-desc': 'font-size:12px;color:#999;padding-top:2px',
+      // 难度颜色（只包含颜色，因为字体样式已经在 info-text 中）
+      'difficulty-easy': 'color:#52C41A',
+      'difficulty-medium': 'color:#FAAD14',
+      'difficulty-hard': 'color:#FF4D4F',
+      
+      // 分隔和小标题 - 用 padding 代替 margin
+      'subsection-title': 'font-size:18px;font-weight:bold;color:#333;padding:24px 0 16px 12px;border-left:4px solid #FF6B35',
+      
+      // 材料列表
+      'ingredients-table': 'width:100%;border-collapse:separate;border-spacing:8px',
+      'ingredient-row': 'background:#FAFAFA;border-radius:12px',
+      'ingredient-cell': 'padding:12px;vertical-align:middle',
+      'ingredient-icon': 'width:40px;height:40px;background:#fff;border-radius:50%;display:inline-block;line-height:40px;text-align:center;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)',
+      'ingredient-name': 'font-weight:500;color:#333;font-size:15px',
+      'ingredient-amount': 'font-size:13px;color:#999',
+      
+      // 步骤 - 移除 margin-bottom，用 <br> 或空的 div 代替
+      'step-item': 'padding-bottom:24px;background:#fff',
+      // 用 table 布局代替 flex
+      'step-header': 'padding-bottom:12px',
+      'step-num': 'width:32px;height:32px;background:linear-gradient(135deg,#FF6B35,#F7931E);color:#fff;border-radius:50%;display:inline-block;line-height:32px;text-align:center;font-weight:bold;font-size:16px;vertical-align:top',
+      'step-title': 'font-size:16px;font-weight:600;color:#333;display:inline-block;padding-top:4px;vertical-align:top',
+      'step-content': 'padding-left:44px',
+      'step-text': 'color:#333;font-size:15px;line-height:1.8;padding-bottom:12px',
+      'step-img': 'width:100%;height:auto;border-radius:12px;padding:12px 0;display:block',
+      // 引用样式 - 移除 margin-top，用 padding 代替
+      'step-tip': 'background:#FFF8F0;border-left:3px solid #FF6B35;padding:10px 12px;border-radius:0 8px 8px 0;font-size:14px;color:#666',
+      
+      // 完成区域 - 移除 margin-top，用 padding 代替
+      'finish-section': 'background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:16px;padding:32px 24px;text-align:center;color:#fff',
+      'finish-icon': 'font-size:48px;padding-bottom:12px',
+      'finish-title': 'font-size:22px;font-weight:bold;padding-bottom:8px',
+      'finish-text': 'font-size:14px;color:rgba(255,255,255,0.9)',
+      
+      // 底部
+      'footer-section': 'padding:32px 24px;text-align:center;background:#FAFAFA',
+      'brand-icon': 'width:48px;height:48px;background:linear-gradient(135deg,#FF6B35,#F7931E);border-radius:50%;display:inline-block;line-height:48px;text-align:center;color:#fff;font-size:24px',
+      'brand-name': 'font-size:16px;font-weight:600;color:#333;padding-bottom:4px',
+      'brand-slogan': 'font-size:13px;color:#999',
+    };
+
+    /**
+     * 解析样式字符串为对象
+     */
+    function parseStyle(styleStr) {
+      const styleObj = {};
+      if (!styleStr) return styleObj;
+      
+      styleStr.split(';').forEach(item => {
+        const [prop, value] = item.split(':');
+        if (prop && value) {
+          styleObj[prop.trim()] = value.trim();
+        }
+      });
+      return styleObj;
+    }
+
+    /**
+     * 将样式对象转换为字符串
+     */
+    function stringifyStyle(styleObj) {
+      return Object.entries(styleObj)
+        .map(([prop, value]) => `${prop}:${value}`)
+        .join(';');
+    }
+
+    /**
+     * 将 class 转换为内联样式（自动合并去重）
+     */
+    function convertClassesToInlineStyles(element) {
+      const cloned = element.cloneNode(true);
+      
+      // 遍历所有元素
+      const elements = cloned.querySelectorAll('*');
+      elements.forEach(el => {
+        const classes = el.className ? el.className.split(/\s+/) : [];
+        const existingStyle = (el.getAttribute('style') || '').trim();
+        
+        // 使用对象存储样式，自动去重（后面的值会覆盖前面的）
+        const styleObj = {};
+        
+        // 先应用映射的样式
+        classes.forEach(cls => {
+          if (STYLE_MAP[cls]) {
+            const mappedStyle = parseStyle(STYLE_MAP[cls]);
+            Object.assign(styleObj, mappedStyle);
+          }
+        });
+        
+        // 最后应用原有的 style 属性（优先级最高）
+        if (existingStyle) {
+          const inlineStyle = parseStyle(existingStyle);
+          Object.assign(styleObj, inlineStyle);
+        }
+        
+        // 设置合并后的样式
+        const finalStyle = stringifyStyle(styleObj);
+        if (finalStyle) {
+          el.setAttribute('style', finalStyle);
+        }
+        
+        // 移除 class 属性
+        el.removeAttribute('class');
+      });
+      
+      return cloned;
+    }
+
+    /**
+     * 复制到微信公众号
+     */
+    async function copyToWechat() {
+      try {
+        const content = document.getElementById('editor-content');
+        
+        // 处理内容，将 class 转为内联样式
+        const processedContent = convertClassesToInlineStyles(content);
+        
+        // 获取 HTML 字符串
+        let html = processedContent.innerHTML;
+        
+        // 清理不必要的属性，但保留 style
+        html = html.replace(/\s+/g, ' ');
+        html = html.replace(/> </g, '><');
+        html = html.trim();
+        
+        // 添加微信编辑器兼容的包装
+        const fullHtml = `<section style="max-width: 100%; padding: 0; margin: 0;">${html}</section>`;
+        
+        // 创建 Blob 对象
+        const htmlBlob = new Blob([fullHtml], { type: 'text/html' });
+        const textBlob = new Blob([fullHtml], { type: 'text/plain' });
+        
+        // 尝试使用 Clipboard API
+        if (navigator.clipboard && window.ClipboardItem) {
+          const data = new ClipboardItem({
+            'text/html': htmlBlob,
+            'text/plain': textBlob
+          });
+          await navigator.clipboard.write([data]);
+        } else {
+          // 降级方案：创建临时元素并复制
+          const tempDiv = document.createElement('div');
+          tempDiv.contentEditable = 'true';
+          tempDiv.style.cssText = 'position: fixed; left: -9999px; top: 0;';
+          tempDiv.innerHTML = fullHtml;
+          document.body.appendChild(tempDiv);
+          
+          // 选择内容
+          const range = document.createRange();
+          range.selectNodeContents(tempDiv);
+          
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          // 执行复制
+          const success = document.execCommand('copy');
+          document.body.removeChild(tempDiv);
+          
+          if (!success) {
+            throw new Error('execCommand copy failed');
+          }
+        }
+        
+        showToast('✅ 复制成功！请到公众号编辑器粘贴', 'success');
+        
+        // 添加闪烁效果提示用户
+        content.style.animation = 'flash 0.5s ease';
+        setTimeout(() => {
+          content.style.animation = '';
+        }, 500);
+        
+      } catch (err) {
+        console.error('复制失败:', err);
+        
+        // 如果自动复制失败，提供手动复制方案
+        fallbackCopy();
+      }
+    }
+
+    /**
+     * 降级复制方案 - 显示 HTML 代码让用户手动复制
+     */
+    function fallbackCopy() {
+      const content = document.getElementById('editor-content');
+      const processedContent = convertClassesToInlineStyles(content);
+      let html = processedContent.innerHTML;
+      html = html.replace(/\s+/g, ' ').replace(/> </g, '><').trim();
+      const fullHtml = `<section style="max-width: 100%; padding: 0; margin: 0;">${html}</section>`;
+      
+      // 创建弹窗显示 HTML
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      `;
+      
+      modal.innerHTML = `
+        <div style="
+          background: #fff;
+          border-radius: 16px;
+          padding: 24px;
+          max-width: 600px;
+          width: 100%;
+          max-height: 80vh;
+          overflow: auto;
+        ">
+          <h3 style="margin: 0 0 16px 0; font-size: 18px;">请手动复制以下代码</h3>
+          <p style="color: #666; font-size: 14px; margin-bottom: 12px;">
+            1. 点击文本框选中全部代码<br>
+            2. 按 Ctrl+C 复制<br>
+            3. 到公众号编辑器粘贴
+          </p>
+          <textarea style="
+            width: 100%;
+            height: 200px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+          " onclick="this.select()">${fullHtml.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+          <button onclick="this.closest('.modal-overlay').remove()" style="
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #FF6B35, #F7931E);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+          ">关闭</button>
+        </div>
+      `;
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+      
+      // 点击背景关闭
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.remove();
+      });
+      
+      showToast('请手动复制弹窗中的代码', 'error');
+    }
+
+    /**
+     * 添加闪烁动画
+     */
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes flash {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; background: #FFF8F0; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    /**
+     * 防止用户意外离开页面
+     */
+    window.addEventListener('beforeunload', function(e) {
+      // 如果有未保存的更改可以提示
+      // e.preventDefault();
+      // e.returnValue = '';
+    });
+  </script>
+</body>
+</html>

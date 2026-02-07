@@ -3,8 +3,12 @@
  * 封装 axios，处理认证、错误处理、请求/响应拦截
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
-import { ApiError } from '@/types/api';
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError } from 'axios';
+
+interface ApiError {
+  error: boolean;
+  msg: string;
+}
 
 // API 基础配置
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';

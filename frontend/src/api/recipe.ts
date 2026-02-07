@@ -4,16 +4,115 @@
  */
 
 import { api } from './client';
-import {
-  Recipe,
-  RecipeOverview,
-  RecipeSimple,
-  RecipeSearchParams,
-  RecipeBatchUpdate,
-  RecipeFromSource,
-  RecipeFromSourceResponse,
-  PaginationResponse,
-} from '@/types/api';
+
+// Type definitions
+interface PaginationResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  timestamp: string;
+  results: T[];
+}
+
+interface Recipe {
+  id: number;
+  name: string;
+  description: string;
+  image: string | null;
+  servings: number;
+  working_time: number;
+  waiting_time: number;
+  keywords: Keyword[];
+  steps: Step[];
+  nutrition: NutritionInformation | null;
+  difficulty: number | null;
+  properties: Property[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface RecipeOverview {
+  id: number;
+  name: string;
+  description: string;
+  image: string | null;
+  servings: number;
+  working_time: number;
+  waiting_time: number;
+  keywords: Keyword[];
+  nutrition?: NutritionInformation | null;
+}
+
+interface RecipeSimple {
+  id: number;
+  name: string;
+}
+
+interface Keyword {
+  id: number;
+  name: string;
+  label?: string;
+}
+
+interface Step {
+  id: number;
+  name: string;
+  instruction: string;
+  ingredients: Ingredient[];
+  time: number;
+  order: number;
+}
+
+interface Ingredient {
+  id: number;
+  food: Food | null;
+  original_text: string;
+}
+
+interface Food {
+  id: number;
+  name: string;
+}
+
+interface NutritionInformation {
+  calories: number;
+  proteins: number;
+  fats: number;
+  carbohydrates: number;
+}
+
+interface Property {
+  id: number;
+  property_amount: number;
+  property_type: PropertyType;
+}
+
+interface PropertyType {
+  id: number;
+  name: string;
+  unit: string;
+}
+
+interface RecipeSearchParams {
+  query?: string;
+  keywords?: number[];
+  foods?: number[];
+  page?: number;
+  page_size?: number;
+  sort_order?: string;
+}
+
+interface RecipeBatchUpdate {
+  recipes: number[];
+}
+
+interface RecipeFromSource {
+  url?: string;
+}
+
+interface RecipeFromSourceResponse {
+  recipe: Recipe;
+}
 
 export const recipeApi = {
   /**

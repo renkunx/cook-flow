@@ -9,14 +9,71 @@ import {
   Plus,
   Minus,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
-import { recipes } from '@/data/recipes';
+import { recipeApi } from '@/api/recipe';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import type { Ingredient, CookingSchedule, ShoppingItem } from '@/types';
 import { categoryIcons } from '@/types';
+
+// Local type definitions
+interface ApiRecipe {
+  id: number;
+  name: string;
+  description: string;
+  image: string | null;
+  servings: number;
+  working_time: number;
+  waiting_time: number;
+  keywords: Keyword[];
+  steps: Step[];
+  nutrition: NutritionInformation | null;
+  difficulty: number | null;
+  properties: Property[];
+}
+
+interface Keyword {
+  id: number;
+  name: string;
+  label?: string;
+}
+
+interface Step {
+  id: number;
+  name: string;
+  instruction: string;
+  ingredients: StepIngredient[];
+  time: number;
+  order: number;
+}
+
+interface StepIngredient {
+  id: number;
+  food: {
+    name: string;
+  } | null;
+  original_text: string;
+}
+
+interface NutritionInformation {
+  calories: number;
+  proteins: number;
+  fats: number;
+  carbohydrates: number;
+}
+
+interface Property {
+  id: number;
+  property_amount: number;
+  property_type: {
+    id: number;
+    name: string;
+    unit: string;
+  };
+}
 
 interface RecipeDetailProps {
   fridgeIngredients: Ingredient[];
@@ -36,19 +93,87 @@ export function RecipeDetail({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedTime, setSelectedTime] = useState('18:00');
   const [servings, setServings] = useState(2);
+  const [apiRecipe, setApiRecipe] = useState<ApiRecipe | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const recipe = recipes.find((r) => r.id === id);
-
+  // Fetch recipe from API
   useEffect(() => {
-    if (!recipe) {
-      navigate('/');
+    const fetchRecipe = async () => {
+      if (!id) return;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const recipeId = parseInt(id, 10);
+        if (isNaN(recipeId)) {
+          navigate('/');
+          return;
+        }
+        const data = await recipeApi.get(recipeId);
+        setApiRecipe(data);
+      } catch (err) {
+        console.error('Failed to fetch recipe:', err);
+        setError('加载菜谱失败');
+        setTimeout(() => navigate('/'), 2000);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecipe();
+  }, [id, navigate]);
+
+  // Convert API recipe to UI format
+  const recipe = useMemo(() => {
+    if (!apiRecipe) return null;
+
+    // Extract ingredients from steps
+    const ingredients: string[] = [];
+    apiRecipe.steps?.forEach((step) => {
+      step.ingredients?.forEach((ing) => {
+        const foodName = ing.food?.name || ing.original_text || '';
+        if (foodName && !ingredients.includes(foodName)) {
+          ingredients.push(foodName);
+        }
+      });
+    });
+
+    // Extract instructions from steps
+    const instructions = apiRecipe.steps?.map((step) => step.instruction).filter(Boolean) || [];
+
+    // Extract tags from keywords
+    const tags = apiRecipe.keywords?.map((k) => k.name) || [];
+
+    // Determine difficulty based on working time or API difficulty field
+    const totalTime = (apiRecipe.working_time || 0) + (apiRecipe.waiting_time || 0);
+    let difficulty: 'easy' | 'medium' | 'hard' = 'easy';
+    if (apiRecipe.difficulty !== null && apiRecipe.difficulty !== undefined) {
+      if (apiRecipe.difficulty <= 2) difficulty = 'easy';
+      else if (apiRecipe.difficulty <= 4) difficulty = 'medium';
+      else difficulty = 'hard';
+    } else {
+      if (totalTime > 60) difficulty = 'hard';
+      else if (totalTime > 30) difficulty = 'medium';
     }
-  }, [recipe, navigate]);
 
-  if (!recipe) return null;
+    return {
+      id: String(apiRecipe.id),
+      title: apiRecipe.name,
+      description: apiRecipe.description || '',
+      image: apiRecipe.image || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=800&auto=format&fit=crop',
+      cookTime: totalTime,
+      calories: apiRecipe.nutrition?.calories || 200,
+      difficulty,
+      ingredients,
+      instructions,
+      tags,
+    };
+  }, [apiRecipe]);
 
-  // Compare recipe ingredients with fridge ingredients
+  // Compare recipe ingredients with fridge ingredients (must be before early returns)
   const ingredientComparison = useMemo(() => {
+    if (!recipe) return [];
     return recipe.ingredients.map((ing) => {
       const matched = fridgeIngredients.find(
         (fi) =>
@@ -61,10 +186,26 @@ export function RecipeDetail({
         matchedIngredient: matched,
       };
     });
-  }, [recipe.ingredients, fridgeIngredients]);
+  }, [recipe, fridgeIngredients]);
 
-  const missingIngredients = ingredientComparison.filter((i) => !i.inFridge);
-  const hasIngredients = ingredientComparison.filter((i) => i.inFridge);
+  const missingIngredients = useMemo(() => ingredientComparison.filter((i) => !i.inFridge), [ingredientComparison]);
+  const hasIngredients = useMemo(() => ingredientComparison.filter((i) => i.inFridge), [ingredientComparison]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--warm-cream)] flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-[var(--warm-orange)] animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !recipe) {
+    return (
+      <div className="min-h-screen bg-[var(--warm-cream)] flex items-center justify-center">
+        <p className="text-[var(--tomato-red)]">{error || '菜谱不存在'}</p>
+      </div>
+    );
+  }
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -263,6 +404,15 @@ export function RecipeDetail({
 
               {/* Ingredient List */}
               <div className="space-y-3">
+                {/* Empty State */}
+                {ingredientComparison.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-[var(--text-brown-light)]/60 text-sm">
+                      该菜谱暂无食材信息
+                    </p>
+                  </div>
+                )}
+
                 {/* Has Ingredients */}
                 {hasIngredients.length > 0 && (
                   <div>
