@@ -84,7 +84,7 @@ const hasMore = computed(() => recipes.value.length < totalCount.value);
 </script>
 
 <template>
-  <div class="min-h-screen bg-white">
+  <div style="min-height: 100vh; background: #FFF8E7;">
     <Navigation />
     <main>
       <Hero />

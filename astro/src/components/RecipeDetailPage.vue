@@ -49,10 +49,10 @@ function getDifficultyText(difficulty: number | null): string {
 }
 
 function getDifficultyColor(difficulty: number | null): string {
-  if (difficulty === null) return 'bg-green-100 text-green-700';
-  if (difficulty <= 2) return 'bg-green-100 text-green-700';
-  if (difficulty <= 4) return 'bg-yellow-100 text-yellow-700';
-  return 'bg-red-100 text-red-700';
+  if (difficulty === null) return 'bg-[#5A9A4F]/10 text-[#5A9A4F]';
+  if (difficulty <= 2) return 'bg-[#5A9A4F]/10 text-[#5A9A4F]';
+  if (difficulty <= 4) return 'bg-[#E8913A]/10 text-[#E8913A]';
+  return 'bg-[#E85D4C]/10 text-[#E85D4C]';
 }
 
 // 返回首页
@@ -62,14 +62,15 @@ function goBack() {
 </script>
 
 <template>
-  <div v-if="recipe" class="min-h-screen bg-white">
+  <div v-if="recipe" style="min-height: 100vh; background: #FFF8E7;">
     <Navigation />
 
     <!-- Back Button -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-4">
       <button
         @click="goBack"
-        class="flex items-center gap-2 text-[#2e5c41] hover:text-[#234a33] transition-colors"
+        class="flex items-center gap-2 transition-colors"
+        style="color: #E8913A;"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -117,36 +118,36 @@ function goBack() {
 
     <!-- Description -->
     <div v-if="recipe.description" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <p class="text-lg text-[#12262a]/70 leading-relaxed">
+      <p class="text-lg leading-relaxed" style="color: #6B5344;">
         {{ recipe.description }}
       </p>
     </div>
 
     <!-- Nutrition Info -->
     <div v-if="recipe.nutrition" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <div class="bg-[#f6f6f6] rounded-2xl p-6">
-        <h2 class="text-xl font-serif font-bold text-[#12262a] mb-4 flex items-center gap-2">
-          <span class="w-8 h-8 rounded-full bg-[#e9f0ec] flex items-center justify-center text-[#2e5c41]">
-            📊
+      <div class="rounded-2xl p-6" style="background: #FFF8E7;">
+        <h2 class="text-xl font-serif font-bold mb-4 flex items-center gap-2" style="color: #4A3728;">
+          <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: rgba(232, 145, 58, 0.1);">
+            <span style="color: #E8913A;">📊</span>
           </span>
           营养信息
         </h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="text-center">
-            <div class="text-2xl font-bold text-[#ff8a01]">{{ recipe.nutrition.calories }}</div>
-            <div class="text-sm text-gray-500">卡路里</div>
+            <div class="text-2xl font-bold" style="color: #F5A623;">{{ recipe.nutrition.calories }}</div>
+            <div class="text-sm" style="color: #6B5344;">卡路里</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-[#2e5c41]">{{ recipe.nutrition.proteins }}g</div>
-            <div class="text-sm text-gray-500">蛋白质</div>
+            <div class="text-2xl font-bold" style="color: #5A9A4F;">{{ recipe.nutrition.proteins }}g</div>
+            <div class="text-sm" style="color: #6B5344;">蛋白质</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-[#2e5c41]">{{ recipe.nutrition.fats }}g</div>
-            <div class="text-sm text-gray-500">脂肪</div>
+            <div class="text-2xl font-bold" style="color: #E8913A;">{{ recipe.nutrition.fats }}g</div>
+            <div class="text-sm" style="color: #6B5344;">脂肪</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-[#2e5c41]">{{ recipe.nutrition.carbohydrates }}g</div>
-            <div class="text-sm text-gray-500">碳水</div>
+            <div class="text-2xl font-bold" style="color: #F5A623;">{{ recipe.nutrition.carbohydrates }}g</div>
+            <div class="text-sm" style="color: #6B5344;">碳水</div>
           </div>
         </div>
       </div>
@@ -154,26 +155,27 @@ function goBack() {
 
     <!-- Ingredients -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-      <div class="bg-white rounded-2xl p-6 border border-[#e9f0ec]">
-        <h2 class="text-xl font-serif font-bold text-[#12262a] mb-4 flex items-center gap-2">
-          <span class="w-8 h-8 rounded-full bg-[#e9f0ec] flex items-center justify-center text-[#2e5c41]">
-            🥗
+      <div class="bg-white rounded-2xl p-6 shadow-warm" style="border: 1px solid #F5E6D3;">
+        <h2 class="text-xl font-serif font-bold mb-4 flex items-center gap-2" style="color: #4A3728;">
+          <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: #FFF8E7;">
+            <span style="color: #E8913A;">🥗</span>
           </span>
           所需食材
-          <span class="text-sm font-normal text-gray-400">({{ recipe.servings }}人份)</span>
+          <span class="text-sm font-normal" style="color: #6B5344;">({{ recipe.servings }}人份)</span>
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div
             v-for="(ing, idx) in ingredients"
             :key="idx"
-            class="flex items-center gap-3 p-3 bg-[#f6f6f6] rounded-xl"
+            class="flex items-center gap-3 p-3 rounded-xl"
+            style="background: #FFF8E7;"
           >
-            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#2e5c41] text-white flex items-center justify-center text-xs font-bold">
+            <span class="flex-shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold" style="background: #E8913A;">
               {{ idx + 1 }}
             </span>
             <div class="flex-1">
-              <div class="font-medium text-[#12262a]">{{ ing.food?.name || '未知食材' }}</div>
-              <div class="text-sm text-gray-500">
+              <div class="font-medium" style="color: #4A3728;">{{ ing.food?.name || '未知食材' }}</div>
+              <div class="text-sm" style="color: #6B5344;">
                 {{ ing.amount }}{{ ing.unit?.name || '' }}
                 <span v-if="ing.note" class="ml-1">({{ ing.note }})</span>
               </div>
@@ -185,10 +187,10 @@ function goBack() {
 
     <!-- Steps -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      <div class="bg-white rounded-2xl p-6 border border-[#e9f0ec]">
-        <h2 class="text-xl font-serif font-bold text-[#12262a] mb-6 flex items-center gap-2">
-          <span class="w-8 h-8 rounded-full bg-[#e9f0ec] flex items-center justify-center text-[#2e5c41]">
-            👨‍🍳
+      <div class="bg-white rounded-2xl p-6 shadow-warm" style="border: 1px solid #F5E6D3;">
+        <h2 class="text-xl font-serif font-bold mb-6 flex items-center gap-2" style="color: #4A3728;">
+          <span class="w-8 h-8 rounded-full flex items-center justify-center" style="background: #FFF8E7;">
+            <span style="color: #E8913A;">👨‍🍳</span>
           </span>
           烹饪步骤
         </h2>
@@ -198,13 +200,13 @@ function goBack() {
             :key="step.id || idx"
             class="flex gap-4"
           >
-            <span class="flex-shrink-0 w-10 h-10 rounded-full bg-[#2e5c41] text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-[#2e5c41]/20">
+            <span class="flex-shrink-0 w-10 h-10 rounded-full text-white flex items-center justify-center font-bold text-lg" style="background: #E8913A;">
               {{ idx + 1 }}
             </span>
             <div class="flex-1">
-              <div v-if="step.name" class="font-semibold text-[#12262a] mb-2">{{ step.name }}</div>
-              <p class="text-gray-700 leading-relaxed">{{ step.instruction }}</p>
-              <div v-if="step.time" class="flex items-center gap-1 mt-2 text-sm text-gray-500">
+              <div v-if="step.name" class="font-semibold mb-2" style="color: #4A3728;">{{ step.name }}</div>
+              <p class="leading-relaxed" style="color: #6B5344;">{{ step.instruction }}</p>
+              <div v-if="step.time" class="flex items-center gap-1 mt-2 text-sm" style="color: #6B5344;">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -219,7 +221,8 @@ function goBack() {
     <!-- CTA -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       <Button
-        class="w-full bg-[#2e5c41] hover:bg-[#234a33] text-white rounded-full py-4 shadow-xl shadow-[#2e5c41]/30"
+        size="lg"
+        class="w-full"
         @click="goBack"
       >
         浏览更多菜谱
@@ -230,8 +233,8 @@ function goBack() {
   <!-- Loading State -->
   <div v-else class="min-h-screen bg-white flex items-center justify-center">
     <div class="flex flex-col items-center gap-4">
-      <div class="w-12 h-12 border-4 border-gray-200 border-t-[#2e5c41] rounded-full animate-spin"></div>
-      <p class="text-gray-500">加载中...</p>
+      <div class="w-12 h-12 border-4 rounded-full animate-spin" style="border-color: #F5E6D3; border-top-color: #E8913A;"></div>
+      <p style="color: #6B5344;">加载中...</p>
     </div>
   </div>
 </template>

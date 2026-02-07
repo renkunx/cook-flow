@@ -7,8 +7,8 @@ interface Props {
 }
 
 const {
-  title = 'FreshPlate - AI 智能菜谱推荐',
-  description = '让每一餐都充满惊喜，用AI智能推荐帮你发现冰箱里的无限可能',
+  title = '下厨有谱 - 承包你的一日三餐',
+  description = '智能菜谱推荐，帮你发现冰箱里的无限可能。添加你现有的食材，我们会为你推荐最合适的菜谱。',
 } = Astro.props;
 ---
 
@@ -18,12 +18,29 @@ const {
     <meta charset="UTF-8" />
     <meta name="description" content={description} />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#FF6B35" />
+    <meta name="application-name" content="下厨有谱" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Figtree:wght@300..900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    <style is:global>
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      input, textarea {
+        -webkit-user-select: auto;
+        user-select: auto;
+      }
+    </style>
   </head>
   <body>
     <slot />

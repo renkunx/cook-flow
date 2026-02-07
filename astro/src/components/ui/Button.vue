@@ -15,20 +15,20 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const buttonClasses = computed(() => {
-  const base = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
+  const base = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
 
   const variants = {
-    default: 'bg-[#2e5c41] text-white hover:bg-[#234a33] shadow-lg shadow-[#2e5c41]/20',
-    outline: 'border-2 border-[#2e5c41]/20 text-[#2e5c41] hover:bg-[#2e5c41]/5',
-    secondary: 'bg-[#e9f0ec] text-[#2e5c41] hover:bg-[#d0e0d8]',
-    ghost: 'hover:bg-[#e9f0ec] hover:text-[#2e5c41]',
-    link: 'text-[#2e5c41] underline-offset-4 hover:underline',
+    default: 'bg-[#E8913A] text-white hover:bg-[#D4802A] shadow-warm hover:shadow-warm-lg',
+    outline: 'border-2 bg-white text-[#4A3728] hover:bg-[#FFF8E7]',
+    secondary: 'bg-[#5A9A4F] text-white hover:bg-[#3D7A35] shadow-warm hover:shadow-warm-lg',
+    ghost: 'hover:bg-[#FFF8E7] hover:text-[#E8913A]',
+    link: 'text-[#E8913A] underline-offset-4 hover:underline',
   };
 
   const sizes = {
     default: 'h-10 px-4 py-2',
-    sm: 'h-9 px-3 py-2 rounded-md',
-    lg: 'h-12 px-6 py-3 text-base rounded-md',
+    sm: 'h-9 px-3 py-2',
+    lg: 'h-12 px-6 py-3 text-base',
     icon: 'h-10 w-10',
   };
 

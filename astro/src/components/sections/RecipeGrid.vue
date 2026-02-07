@@ -29,8 +29,6 @@ const matchedRecipes = computed(() => {
   }
 
   return props.recipes.map((recipe) => {
-    // For now, we'll use a simple match calculation
-    // In a real implementation, you'd need to fetch recipe details to check ingredients
     const matchCount = props.selectedIngredients.filter((ing) =>
       recipe.name.toLowerCase().includes(ing.toLowerCase()) ||
       (recipe.description && recipe.description.toLowerCase().includes(ing.toLowerCase()))
@@ -52,10 +50,10 @@ function getDifficultyText(difficulty: number | null): string {
 }
 
 function getDifficultyColor(difficulty: number | null): string {
-  if (difficulty === null) return 'bg-green-100 text-green-700';
-  if (difficulty <= 2) return 'bg-green-100 text-green-700';
-  if (difficulty <= 4) return 'bg-yellow-100 text-yellow-700';
-  return 'bg-red-100 text-red-700';
+  if (difficulty === null) return 'bg-[#5A9A4F]/10 text-[#5A9A4F]';
+  if (difficulty <= 2) return 'bg-[#5A9A4F]/10 text-[#5A9A4F]';
+  if (difficulty <= 4) return 'bg-[#E8913A]/10 text-[#E8913A]';
+  return 'bg-[#E85D4C]/10 text-[#E85D4C]';
 }
 
 function formatTime(minutes?: number): string {
@@ -72,20 +70,20 @@ function navigateToRecipe(id: number) {
 </script>
 
 <template>
-  <section id="recipes" class="py-20 bg-[#f6f6f6]">
+  <section id="recipes" class="py-20" style="background: #FDF5E6;">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="text-center mb-12">
         <div class="inline-flex items-center gap-2 bg-white rounded-full px-4 py-2 mb-4 shadow-sm">
-          <svg class="w-4 h-4 text-[#2e5c41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4" style="color: #E8913A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
-          <span class="text-sm font-medium text-[#2e5c41]">推荐菜谱</span>
+          <span class="text-sm font-medium" style="color: #E8913A;">推荐菜谱</span>
         </div>
-        <h2 class="text-3xl md:text-4xl font-serif font-bold text-[#12262a] mb-4">
+        <h2 class="text-3xl md:text-4xl font-serif font-bold mb-4" style="color: #4A3728;">
           为你推荐的菜谱
         </h2>
-        <p class="text-[#12262a]/60 max-w-lg mx-auto">
+        <p class="max-w-lg mx-auto" style="color: #6B5344;">
           {{ selectedIngredients.length > 0
             ? `基于你选择的 ${selectedIngredients.length} 种食材，为你推荐以下菜谱`
             : '浏览我们的精选菜谱，找到你的下一餐灵感'
@@ -116,7 +114,7 @@ function navigateToRecipe(id: number) {
                 v-if="selectedIngredients.length > 0 && (recipe as any).matchPercentage && (recipe as any).matchPercentage > 0"
                 class="absolute top-3 left-3 badge-wrapper"
               >
-                <Badge class="bg-[#2e5c41] text-white">
+                <Badge class="bg-[#5A9A4F] text-white">
                   匹配度 {{ (recipe as any).matchPercentage }}%
                 </Badge>
               </div>
@@ -139,10 +137,10 @@ function navigateToRecipe(id: number) {
 
             <!-- Content -->
             <div class="p-5 content-wrapper">
-              <h3 class="text-lg font-serif font-bold text-[#12262a] mb-2 recipe-title">
+              <h3 class="text-lg font-serif font-bold mb-2 recipe-title" style="color: #4A3728;">
                 {{ recipe.name }}
               </h3>
-              <p class="text-sm text-gray-500 line-clamp-2 mb-4 description">
+              <p class="text-sm line-clamp-2 mb-4 description" style="color: #6B5344;">
                 {{ recipe.description || '暂无描述' }}
               </p>
 
@@ -151,16 +149,17 @@ function navigateToRecipe(id: number) {
                 <span
                   v-for="tag in recipe.keywords?.slice(0, 3)"
                   :key="tag.id"
-                  class="text-xs px-2 py-1 bg-[#e9f0ec] text-[#2e5c41] rounded-full tag-pill"
+                  class="text-xs px-2 py-1 rounded-full tag-pill"
+                  style="background: #FFF8E7; color: #4A3728;"
                 >
                   {{ tag.label || tag.name }}
                 </span>
               </div>
 
               <!-- Footer -->
-              <div class="flex items-center justify-between pt-4 border-t border-gray-100 footer-content">
-                <div class="flex items-center gap-4 text-sm text-gray-500">
-                  <span class="flex items-center gap-1 stat-item">
+              <div class="flex items-center justify-between pt-4 footer-content" style="border-top-color: #F5E6D3;">
+                <div class="flex items-center gap-4 text-sm stat-item" style="color: #6B5344;">
+                  <span class="flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
@@ -168,9 +167,9 @@ function navigateToRecipe(id: number) {
                     {{ recipe.servings }}人份
                   </span>
                 </div>
-                <div class="text-[#2e5c41] font-medium text-sm flex items-center gap-1 cta-text">
+                <div class="font-medium text-sm flex items-center gap-1 cta-text" style="color: #E8913A;">
                   查看做法
-                  <svg class="w-4 h-4 fill-[#ff8a01] text-[#ff8a01]" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" style="color: #E8913A;">
                     <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                   </svg>
                 </div>
@@ -183,18 +182,18 @@ function navigateToRecipe(id: number) {
       <!-- Loading State -->
       <div v-if="isLoading" class="flex justify-center py-12">
         <div class="flex flex-col items-center gap-4">
-          <div class="w-10 h-10 border-4 border-gray-200 border-t-[#2e5c41] rounded-full animate-spin"></div>
-          <p class="text-gray-500">加载中...</p>
+          <div class="w-10 h-10 border-4 rounded-full animate-spin" style="border-color: #F5E6D3; border-top-color: #E8913A;"></div>
+          <p style="color: #6B5344;">加载中...</p>
         </div>
       </div>
 
       <!-- Empty State -->
       <div v-else-if="recipes.length === 0" class="text-center py-20">
-        <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-20 h-20 mx-auto mb-4" style="color: #E8913A; opacity: 0.3;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">暂无菜谱</h3>
-        <p class="text-gray-400">试试调整搜索条件</p>
+        <h3 class="text-xl font-semibold mb-2" style="color: #4A3728;">暂无菜谱</h3>
+        <p style="color: #6B5344;">试试调整搜索条件</p>
       </div>
 
       <!-- Load More Button -->
@@ -202,7 +201,7 @@ function navigateToRecipe(id: number) {
         <Button
           @click="emit('load-more')"
           :disabled="isLoading"
-          class="bg-[#2e5c41] hover:bg-[#234a33] text-white rounded-full px-10 py-4 shadow-lg shadow-[#2e5c41]/30"
+          size="lg"
         >
           {{ isLoading ? '加载中...' : '加载更多' }}
         </Button>
@@ -236,7 +235,7 @@ function navigateToRecipe(id: number) {
 
 /* Recipe Card Styles */
 .recipe-card {
-  box-shadow: 0 1px 3px rgba(18, 38, 42, 0.08), 0 1px 2px rgba(18, 38, 42, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
@@ -247,7 +246,7 @@ function navigateToRecipe(id: number) {
   inset: 0;
   border-radius: 1rem;
   padding: 2px;
-  background: linear-gradient(135deg, #2e5c41, #ff8a01);
+  background: linear-gradient(135deg, #E8913A, #F5A623);
   opacity: 0;
   transition: opacity 0.4s ease;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -264,10 +263,7 @@ function navigateToRecipe(id: number) {
 
 .recipe-card:hover {
   transform: translateY(-8px) scale(1.02);
-  box-shadow:
-    0 20px 40px rgba(18, 38, 42, 0.12),
-    0 8px 16px rgba(18, 38, 42, 0.08),
-    0 0 0 1px rgba(46, 92, 65, 0.1);
+  box-shadow: 0 8px 32px rgba(232, 145, 58, 0.2);
 }
 
 /* Image Container */
@@ -304,7 +300,7 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .recipe-title {
-  color: #2e5c41;
+  color: #E8913A;
   transform: translateX(4px);
 }
 
@@ -314,7 +310,7 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .description {
-  color: #666;
+  color: #4A3728;
 }
 
 /* Tag Pills */
@@ -323,13 +319,14 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .tag-pill {
-  background: #d4e8dc;
+  background: #F5E6D3;
   transform: translateY(-2px);
 }
 
 /* Footer Content */
 .footer-content {
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-top: 1px solid #F5E6D3;
 }
 
 /* Stat Items */
@@ -338,7 +335,7 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .stat-item {
-  color: #2e5c41;
+  color: #E8913A;
 }
 
 /* CTA Text */
@@ -348,7 +345,7 @@ function navigateToRecipe(id: number) {
 
 .recipe-card:hover .cta-text {
   transform: translateX(8px);
-  color: #ff8a01;
+  color: #F5A623;
 }
 
 /* Animation delays */

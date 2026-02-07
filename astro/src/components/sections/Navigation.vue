@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
-import Button from '../ui/Button.vue';
 
 const isScrolled = ref(false);
 const isMobileMenuOpen = ref(false);
+const lastScrollY = ref(0);
 const isNavVisible = ref(true);
 
 const navLinks = [
@@ -13,7 +13,22 @@ const navLinks = [
 ];
 
 function handleScroll() {
-  isScrolled.value = window.scrollY > 50;
+  const currentScrollY = window.scrollY;
+
+  // Always show at top
+  if (currentScrollY < 80) {
+    isNavVisible.value = true;
+  } else {
+    // Hide when scrolling down, show when scrolling up
+    if (currentScrollY > lastScrollY.value) {
+      isNavVisible.value = false;
+    } else {
+      isNavVisible.value = true;
+    }
+  }
+
+  isScrolled.value = currentScrollY > 50;
+  lastScrollY.value = currentScrollY;
 }
 
 function scrollToSection(href: string) {
@@ -25,11 +40,6 @@ function scrollToSection(href: string) {
 }
 
 onMounted(() => {
-  // Initial slide-in animation
-  setTimeout(() => {
-    isNavVisible.value = true;
-  }, 100);
-
   window.addEventListener('scroll', handleScroll, { passive: true });
 });
 
@@ -41,8 +51,7 @@ onUnmounted(() => {
 <template>
   <nav
     :class="[
-      'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
-      isScrolled ? 'py-3' : 'py-5',
+      'fixed top-0 left-0 right-0 z-50 py-3 transition-all duration-300',
       !isNavVisible && '-translate-y-full'
     ]"
   >
@@ -51,66 +60,76 @@ onUnmounted(() => {
         :class="[
           'flex items-center justify-between transition-all duration-500',
           isScrolled
-            ? 'bg-white/80 backdrop-blur-xl shadow-lg rounded-3xl px-6 py-3'
+            ? 'bg-white/90 backdrop-blur-xl shadow-warm rounded-full px-5 py-2.5'
             : 'bg-transparent px-2'
         ]"
       >
         <!-- Logo -->
         <a
-          href="#"
-          class="flex items-center gap-2 group hover:scale-105 active:scale-95 transition-transform duration-200"
+          href="/"
+          class="flex items-center gap-3 group hover:scale-105 active:scale-95 transition-transform duration-200"
         >
-          <div class="w-10 h-10 rounded-full bg-[#2e5c41] flex items-center justify-center group-hover:shadow-lg group-hover:shadow-[#2e5c41]/30 transition-shadow duration-300">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-            </svg>
+          <div class="w-10 h-10 rounded-full overflow-hidden shadow-sm">
+            <img
+              src="/logo.jpg"
+              alt="下厨有谱"
+              class="w-full h-full object-cover"
+            />
           </div>
-          <span :class="[
-            'font-serif text-xl font-bold transition-colors',
-            isScrolled ? 'text-[#12262a]' : 'text-[#12262a]'
-          ]">
-            FreshPlate
-          </span>
+          <div class="flex flex-col">
+            <span class="font-serif text-lg font-bold text-[#4A3728] leading-tight">
+              下厨有谱
+            </span>
+            <span
+              :class="[
+                'text-[10px] leading-tight hidden sm:block transition-colors',
+                isScrolled ? 'text-[#6B5344]' : 'text-[#6B5344]'
+              ]"
+            >
+              承包你的一日三餐
+            </span>
+          </div>
         </a>
 
         <!-- Desktop Navigation -->
-        <div class="hidden md:flex items-center gap-8">
+        <div class="hidden md:flex items-center gap-6">
           <a
             v-for="(link, index) in navLinks"
             :key="link.label"
             :href="link.href"
             @click.prevent="scrollToSection(link.href)"
             :class="[
-              'relative text-sm font-medium transition-all duration-300',
-              'opacity-0 translate-y-4',
-              isNavVisible && 'opacity-100 translate-y-0'
+              'relative text-sm font-medium transition-colors',
+              'opacity-0 animate-slide-up',
+              isScrolled ? 'text-[#6B5344] hover:text-[#E8913A]' : 'text-[#6B5344] hover:text-[#E8913A]'
             ]"
-            :style="{ transitionDelay: `${200 + index * 100}ms` }"
+            :style="{ animationDelay: `${200 + index * 100}ms` }"
           >
             {{ link.label }}
-            <span class="absolute -bottom-1 left-0 w-full h-0.5 bg-[#2e5c41] scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300" />
+            <span class="absolute -bottom-0.5 left-0 w-full h-0.5 bg-[#E8913A] scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300" />
           </a>
         </div>
 
         <!-- CTA Button -->
-        <div class="hidden md:block opacity-0" :style="{ transitionDelay: '500ms' }"">
-          <Button
-            class="bg-[#2e5c41] hover:bg-[#234a33] text-white rounded-full px-6 shadow-lg shadow-[#2e5c41]/20"
-            :class="isNavVisible && 'opacity-100'"
-          >
-            开始烹饪
-          </Button>
+        <div class="hidden md:flex items-center gap-2">
+          <div class="opacity-0 animate-scale-in" style="animation-delay: 500ms">
+            <button
+              class="bg-[#E8913A] hover:bg-[#D4802A] text-white rounded-full px-5 py-2 text-sm font-medium shadow-warm hover:shadow-warm-lg transition-all"
+            >
+              开始烹饪
+            </button>
+          </div>
         </div>
 
         <!-- Mobile Menu Button -->
         <button
-          class="md:hidden p-2 active:scale-95"
+          class="md:hidden p-2 text-[#4A3728] active:scale-95 transition-transform"
           @click="isMobileMenuOpen = !isMobileMenuOpen"
         >
-          <svg v-if="!isMobileMenuOpen" class="w-6 h-6 text-[#12262a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-if="!isMobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-          <svg v-else class="w-6 h-6 text-[#12262a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -128,7 +147,7 @@ onUnmounted(() => {
     >
       <div
         v-if="isMobileMenuOpen"
-        class="fixed inset-x-0 top-20 z-40 bg-white/95 backdrop-blur-xl shadow-xl mx-4 rounded-2xl p-6 md:hidden"
+        class="fixed inset-x-0 top-20 z-40 bg-white/95 backdrop-blur-xl shadow-warm-lg mx-4 rounded-2xl p-6 md:hidden"
       >
         <div class="flex flex-col gap-4">
           <a
@@ -136,13 +155,13 @@ onUnmounted(() => {
             :key="link.label"
             :href="link.href"
             @click="scrollToSection(link.href)"
-            class="text-lg font-medium text-[#12262a] py-2 border-b border-gray-100"
+            class="text-lg font-medium text-[#4A3728] py-2 border-b border-[#FDF5E6]"
           >
             {{ link.label }}
           </a>
-          <Button class="bg-[#2e5c41] hover:bg-[#234a33] text-white rounded-full mt-4">
+          <button class="w-full bg-[#E8913A] hover:bg-[#D4802A] text-white rounded-full mt-4 py-3 font-medium transition-all">
             开始烹饪
-          </Button>
+          </button>
         </div>
       </div>
     </Transition>

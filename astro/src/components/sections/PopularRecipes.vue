@@ -59,17 +59,17 @@ function navigateToRecipe(id: number) {
       <!-- Header -->
       <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <div class="inline-flex items-center gap-2 bg-[#fff3e0] rounded-full px-4 py-2 mb-4">
-            <svg class="w-4 h-4 text-[#ff8a01]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4" style="background: rgba(232, 145, 58, 0.1);">
+            <svg class="w-4 h-4" style="color: #E8913A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
-            <span class="text-sm font-medium text-[#ff8a01]">热门菜谱</span>
+            <span class="text-sm font-medium" style="color: #E8913A;">热门菜谱</span>
           </div>
-          <h2 class="text-3xl md:text-4xl font-serif font-bold text-[#12262a]">
+          <h2 class="text-3xl md:text-4xl font-serif font-bold" style="color: #4A3728;">
             本周社区最爱
           </h2>
         </div>
-        <p class="text-[#12262a]/60 max-w-md">
+        <p class="max-w-md" style="color: #6B5344;">
           看看大家都在做什么，发现更多美味灵感
         </p>
       </div>
@@ -87,7 +87,7 @@ function navigateToRecipe(id: number) {
           @click="navigateToRecipe(recipe.id)"
           :class="['flex-shrink-0 w-80 group cursor-pointer animate-scale-in', `animate-delay-${Math.min(index * 100, 600)}`]"
         >
-          <div class="recipe-card bg-[#f6f6f6] rounded-2xl overflow-hidden">
+          <div class="recipe-card rounded-2xl overflow-hidden" style="background: #FFF8E7;">
             <!-- Image -->
             <div class="relative h-56 overflow-hidden image-container">
               <img
@@ -100,7 +100,7 @@ function navigateToRecipe(id: number) {
               <!-- Rank Badge -->
               <div class="absolute top-4 left-4 badge-wrapper">
                 <div class="w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center">
-                  <span class="text-lg font-bold text-[#ff8a01]">
+                  <span class="text-lg font-bold" style="color: #E8913A;">
                     {{ (index % recipes.length) + 1 }}
                   </span>
                 </div>
@@ -117,16 +117,16 @@ function navigateToRecipe(id: number) {
 
             <!-- Content -->
             <div class="p-5 content-wrapper">
-              <h3 class="text-lg font-serif font-bold text-[#12262a] mb-2 recipe-title">
+              <h3 class="text-lg font-serif font-bold mb-2 recipe-title" style="color: #4A3728;">
                 {{ recipe.name }}
               </h3>
-              <p class="text-sm text-gray-500 line-clamp-2 mb-4 description">
+              <p class="text-sm line-clamp-2 mb-4 description" style="color: #6B5344;">
                 {{ recipe.description || '暂无描述' }}
               </p>
 
               <div class="flex items-center justify-between footer-content">
-                <div class="flex items-center gap-3 text-sm text-gray-500">
-                  <span class="flex items-center gap-1 stat-item">
+                <div class="flex items-center gap-3 text-sm stat-item" style="color: #6B5344;">
+                  <span class="flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
@@ -134,7 +134,7 @@ function navigateToRecipe(id: number) {
                     {{ recipe.servings }}人份
                   </span>
                 </div>
-                <div class="text-[#2e5c41] font-medium text-sm flex items-center gap-1 cta-text">
+                <div class="font-medium text-sm flex items-center gap-1 cta-text" style="color: #E8913A;">
                   查看
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -153,7 +153,7 @@ function navigateToRecipe(id: number) {
 
     <!-- View All Button -->
     <div class="text-center mt-12 animate-scale-in">
-      <button @click="window.location.href='#recipes'" class="inline-flex items-center gap-2 text-[#2e5c41] font-medium hover:gap-3 transition-all">
+      <button @click="window.location.href='#recipes'" class="inline-flex items-center gap-2 font-medium hover:gap-3 transition-all" style="color: #E8913A;">
         查看全部热门菜谱
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -188,7 +188,7 @@ function navigateToRecipe(id: number) {
 
 /* Recipe Card Styles */
 .recipe-card {
-  box-shadow: 0 1px 3px rgba(18, 38, 42, 0.08), 0 1px 2px rgba(18, 38, 42, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
@@ -199,7 +199,7 @@ function navigateToRecipe(id: number) {
   inset: 0;
   border-radius: 1rem;
   padding: 2px;
-  background: linear-gradient(135deg, #ff8a01, #2e5c41);
+  background: linear-gradient(135deg, #E8913A, #F5A623);
   opacity: 0;
   transition: opacity 0.4s ease;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -216,10 +216,7 @@ function navigateToRecipe(id: number) {
 
 .recipe-card:hover {
   transform: translateY(-8px) scale(1.02);
-  box-shadow:
-    0 20px 40px rgba(18, 38, 42, 0.12),
-    0 8px 16px rgba(18, 38, 42, 0.08),
-    0 0 0 1px rgba(255, 138, 1, 0.1);
+  box-shadow: 0 8px 32px rgba(232, 145, 58, 0.2);
 }
 
 /* Image Container */
@@ -256,7 +253,7 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .recipe-title {
-  color: #2e5c41;
+  color: #E8913A;
   transform: translateX(4px);
 }
 
@@ -266,7 +263,7 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .description {
-  color: #666;
+  color: #4A3728;
 }
 
 /* Footer Content */
@@ -280,7 +277,7 @@ function navigateToRecipe(id: number) {
 }
 
 .recipe-card:hover .stat-item {
-  color: #2e5c41;
+  color: #E8913A;
 }
 
 /* CTA Text */
@@ -290,7 +287,7 @@ function navigateToRecipe(id: number) {
 
 .recipe-card:hover .cta-text {
   transform: translateX(8px);
-  color: #ff8a01;
+  color: #F5A623;
 }
 
 /* Cards Container Parallax */

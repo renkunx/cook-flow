@@ -1,1 +1,326 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  /* 温暖厨房主题色 - 从前端模板提取 */
+  --color-warm-cream: #FFF8E7;
+  --color-warm-beige: #FDF5E6;
+  --color-warm-orange: #E8913A;
+  --color-warm-orange-light: #F5A623;
+  --color-warm-orange-dark: #D4802A;
+  --color-fresh-green: #5A9A4F;
+  --color-fresh-green-light: #7CB342;
+  --color-fresh-green-dark: #3D7A35;
+  --color-tomato-red: #E85D4C;
+  --color-carrot-orange: #F09340;
+  --color-herb-green: #4CAF50;
+  --color-text-brown: #4A3728;
+  --color-text-brown-light: #6B5344;
+  --color-text-brown-dark: #2D1F16;
+
+  /* Primary theme color */
+  --color-primary: #E8913A;
+  --color-primary-dark: #D4802A;
+  --color-primary-light: #F5A623;
+
+  /* Semantic colors */
+  --color-background: #FFF8E7;
+  --color-foreground: #4A3728;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #4A3728;
+
+  /* Border and input colors */
+  --color-border: #F5E6D3;
+  --color-input: #F5E6D3;
+  --color-ring: #E8913A;
+
+  /* Radius values */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+
+  /* Shadow values */
+  --shadow-warm: 0 4px 20px rgba(232, 145, 58, 0.15);
+  --shadow-warm-lg: 0 8px 32px rgba(232, 145, 58, 0.2);
+}
+
+/* Base styles */
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-warm-cream);
+  color: var(--color-text-brown);
+  font-family: 'Noto Sans SC', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Fraunces', 'Noto Sans SC', serif;
+}
+
+/* Utility classes */
+.glass-effect {
+  backdrop-blur: 20px;
+  background-color: rgba(255, 255, 255, 0.85);
+}
+
+.gradient-warm {
+  background: linear-gradient(135deg, var(--color-warm-orange) 0%, var(--color-warm-orange-light) 100%);
+}
+
+.gradient-cream {
+  background: linear-gradient(180deg, var(--color-warm-cream) 0%, var(--color-warm-beige) 100%);
+}
+
+.text-gradient-orange {
+  background: linear-gradient(135deg, var(--color-warm-orange) 0%, var(--color-tomato-red) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-green {
+  background: linear-gradient(135deg, var(--color-fresh-green) 0%, var(--color-herb-green) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.shadow-warm {
+  box-shadow: 0 4px 20px rgba(232, 145, 58, 0.15);
+}
+
+.shadow-warm-lg {
+  box-shadow: 0 8px 32px rgba(232, 145, 58, 0.2);
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: var(--color-warm-orange);
+  color: white;
+  border-radius: 9999px;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-warm-orange-dark);
+}
+
+.btn-secondary {
+  background-color: var(--color-fresh-green);
+  color: white;
+  border-radius: 9999px;
+  transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-fresh-green-dark);
+}
+
+/* Card styles */
+.card-warm {
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px rgba(232, 145, 58, 0.15);
+  transition: all 0.3s;
+}
+
+.card-warm:hover {
+  box-shadow: 0 8px 32px rgba(232, 145, 58, 0.2);
+}
+
+/* Badge styles */
+.badge-orange {
+  background-color: rgba(232, 145, 58, 0.1);
+  color: var(--color-warm-orange-dark);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.badge-green {
+  background-color: rgba(90, 154, 79, 0.1);
+  color: var(--color-fresh-green-dark);
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Custom Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(1deg);
+  }
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes steam {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(1.2);
+  }
+}
+
+@keyframes pulse-warm {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(232, 145, 58, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(232, 145, 58, 0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: float-gentle 4s ease-in-out infinite;
+}
+
+.animate-steam {
+  animation: steam 3s ease-out infinite;
+}
+
+.animate-pulse-warm {
+  animation: pulse-warm 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-warm-beige);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-warm-orange);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-warm-orange-dark);
+}
+
+/* Selection */
+::selection {
+  background: rgba(232, 145, 58, 0.25);
+  color: var(--color-text-brown-dark);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--color-warm-orange);
+  outline-offset: 2px;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Hide scrollbar utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

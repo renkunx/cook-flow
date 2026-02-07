@@ -72,20 +72,20 @@ const groupedByCategory = computed(() => {
 </script>
 
 <template>
-  <section id="ingredients" class="py-20 bg-white">
+  <section id="ingredients" class="py-20" style="background: #FFF8E7;">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Header -->
       <div class="text-center mb-12">
-        <div class="inline-flex items-center gap-2 bg-[#e9f0ec] rounded-full px-4 py-2 mb-4">
-          <svg class="w-4 h-4 text-[#2e5c41]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-4" style="background: rgba(232, 145, 58, 0.1);">
+          <svg class="w-4 h-4" style="color: #E8913A;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
           </svg>
-          <span class="text-sm font-medium text-[#2e5c41]">我的冰箱</span>
+          <span class="text-sm font-medium" style="color: #E8913A;">我的冰箱</span>
         </div>
-        <h2 class="text-3xl md:text-4xl font-serif font-bold text-[#12262a] mb-4">
+        <h2 class="text-3xl md:text-4xl font-serif font-bold mb-4" style="color: #4A3728;">
           今天冰箱里有什么？
         </h2>
-        <p class="text-[#12262a]/60 max-w-lg mx-auto">
+        <p class="max-w-lg mx-auto" style="color: #6B5344;">
           添加你现有的食材，我们会为你推荐最合适的菜谱
         </p>
       </div>
@@ -96,11 +96,11 @@ const groupedByCategory = computed(() => {
           :class="[
             'relative flex items-center gap-2 bg-white border-2 rounded-2xl p-2 transition-all duration-300',
             isFocused
-              ? 'border-[#2e5c41] shadow-lg shadow-[#2e5c41]/10'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'border-[#E8913A] shadow-warm'
+              : 'border-[#F5E6D3] hover:border-[#E8913A]/30'
           ]"
         >
-          <svg class="w-5 h-5 text-gray-400 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 ml-3" style="color: #6B5344;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <Input
@@ -108,13 +108,13 @@ const groupedByCategory = computed(() => {
             type="text"
             placeholder="输入食材名称..."
             class="flex-1 border-0 bg-transparent focus-visible:ring-0 text-lg"
+            style="--tw-ring-color: #E8913A;"
             @focus="isFocused = true"
             @blur="setTimeout(() => isFocused = false, 200)"
             @keydown="handleKeyDown"
           />
           <Button
             @click="inputValue && handleKeyDown({ key: 'Enter' } as KeyboardEvent)"
-            class="bg-[#2e5c41] hover:bg-[#234a33] text-white rounded-xl px-6"
           >
             <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -134,17 +134,18 @@ const groupedByCategory = computed(() => {
         >
           <div
             v-if="suggestions.length > 0 && isFocused"
-            class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20"
+            class="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-warm-lg overflow-hidden z-20"
+            style="border: 1px solid #F5E6D3;"
           >
             <button
               v-for="(ingredient, index) in suggestions"
               :key="ingredient.id"
               @click="addIngredient(ingredient)"
-              class="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#e9f0ec] transition-colors text-left"
+              class="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#FFF8E7] transition-colors text-left"
             >
               <span class="text-2xl">{{ categoryIcons[ingredient.category] }}</span>
-              <span class="flex-1 text-[#12262a]">{{ ingredient.name }}</span>
-              <span class="text-xs text-gray-400">{{ categoryLabels[ingredient.category] }}</span>
+              <span class="flex-1" style="color: #4A3728;">{{ ingredient.name }}</span>
+              <span class="text-xs" style="color: #6B5344;">{{ categoryLabels[ingredient.category] }}</span>
             </button>
           </div>
         </Transition>
@@ -152,7 +153,7 @@ const groupedByCategory = computed(() => {
 
       <!-- Quick Add Tags -->
       <div class="mb-8">
-        <p class="text-sm text-gray-500 mb-3">快速添加：</p>
+        <p class="text-sm mb-3" style="color: #6B5344;">快速添加：</p>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="ingredient in presetIngredients.slice(0, 12)"
@@ -162,9 +163,13 @@ const groupedByCategory = computed(() => {
             :class="[
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all',
               selectedIngredients.some((i) => i.id === ingredient.id)
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-[#e9f0ec] text-[#2e5c41] hover:bg-[#2e5c41] hover:text-white active:scale-95'
+                ? 'bg-[#FDF5E6] cursor-not-allowed'
+                : 'bg-white hover:bg-[#E8913A] hover:text-white active:scale-95 shadow-sm'
             ]"
+            :style="selectedIngredients.some((i) => i.id === ingredient.id)
+              ? 'color: #6B5344;'
+              : 'color: #4A3728; border: 1px solid #F5E6D3;'
+            "
           >
             <span>{{ categoryIcons[ingredient.category] }}</span>
             {{ ingredient.name }}
@@ -183,18 +188,18 @@ const groupedByCategory = computed(() => {
       >
         <div
           v-if="selectedIngredients.length > 0"
-          class="bg-[#f6f6f6] rounded-2xl p-6"
+          class="bg-white rounded-2xl p-6 shadow-warm"
         >
           <div class="flex items-center justify-between mb-4">
-            <h3 class="font-medium text-[#12262a]">已选食材</h3>
-            <span class="text-sm text-[#2e5c41] font-medium">
+            <h3 class="font-medium" style="color: #4A3728;">已选食材</h3>
+            <span class="text-sm font-medium" style="color: #E8913A;">
               {{ selectedIngredients.length }} 种
             </span>
           </div>
 
           <div class="space-y-4">
             <div v-for="([category, ingredients], idx) in Object.entries(groupedByCategory)" :key="category">
-              <p class="text-xs text-gray-500 mb-2">{{ categoryLabels[category as keyof typeof categoryLabels] }}</p>
+              <p class="text-xs mb-2" style="color: #6B5344;">{{ categoryLabels[category as keyof typeof categoryLabels] }}</p>
               <div class="flex flex-wrap gap-2">
                 <TransitionGroup
                   tag="div"
@@ -204,15 +209,16 @@ const groupedByCategory = computed(() => {
                   <span
                     v-for="ingredient in ingredients"
                     :key="ingredient.id"
-                    class="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-sm text-[#12262a] shadow-sm"
+                    class="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm shadow-sm"
+                    style="background: #FFF8E7; color: #4A3728; border: 1px solid #F5E6D3;"
                   >
                     <span>{{ categoryIcons[ingredient.category] }}</span>
                     {{ ingredient.name }}
                     <button
                       @click="removeIngredient(ingredient.id)"
-                      class="ml-1 p-0.5 hover:bg-gray-100 rounded-full transition-colors"
+                      class="ml-1 p-0.5 hover:bg-[#E8913A]/10 rounded-full transition-colors"
                     >
-                      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3.5 h-3.5" style="color: #6B5344;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -225,7 +231,8 @@ const groupedByCategory = computed(() => {
           <!-- Clear All -->
           <button
             @click="emit('update:selectedIngredients', [])"
-            class="mt-4 text-sm text-gray-500 hover:text-[#2e5c41] transition-colors"
+            class="mt-4 text-sm hover:text-[#E8913A] transition-colors"
+            style="color: #6B5344;"
           >
             清空所有
           </button>
@@ -235,11 +242,14 @@ const groupedByCategory = computed(() => {
       <!-- Empty State -->
       <div
         v-if="selectedIngredients.length === 0"
-        class="text-center py-12 text-gray-400"
+        class="text-center py-12"
+        style="color: #6B5344;"
       >
-        <svg class="w-12 h-12 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-        </svg>
+        <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: #FFF8E7;">
+          <svg class="w-10 h-10" style="color: #E8913A; opacity: 0.4;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+          </svg>
+        </div>
         <p>还没有添加食材，开始添加吧！</p>
       </div>
     </div>

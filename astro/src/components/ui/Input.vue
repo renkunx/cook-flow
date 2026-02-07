@@ -22,7 +22,8 @@ const emit = defineEmits<{
 
 const inputClasses = computed(() => {
   return cn(
-    'flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none focus-visible:border-[#2e5c41] focus-visible:ring-2 focus-visible:ring-[#2e5c41]/20 disabled:cursor-not-allowed disabled:opacity-50',
+    'flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-400 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+    'border-[#F5E6D3] focus-visible:border-[#E8913A] focus-visible:ring-2 focus-visible:ring-[#E8913A]/20',
     props.class
   );
 });
