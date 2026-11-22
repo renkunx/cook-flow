@@ -97,3 +97,11 @@ local-recipes/
 # Git worktrees (Crystal)
 /worktrees/
 /worktree-*/
+.DS_Store
+node_modules/
+.env
+.env.local
+.claude/
+pnpm-lock.yaml
+*.swp
+*~
